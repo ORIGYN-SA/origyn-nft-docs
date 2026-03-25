@@ -31,15 +31,17 @@ The Minting Studio is a permissioned environment. To gain access, send an email 
 
 #### 2. Prepare Your Environment
 
-Ensure your wallet holds at least 15,000 OGY to cover the creation fee. You will be interacting with the Minting Studio canister (**`zqa57-zaaaa-aaaah-qqopq-cai`**) and should reference the[ ORIGYN-SA/claimlink](https://github.com/ORIGYN-SA/claimlink) repository if you need deep technical details.
+Ensure your wallet holds at least 15,000 OGY to cover the creation fee. You will be interacting with the Minting Studio canister (**`uasjq-dyaaa-aaaas-qdwka-cai`**) and should reference the [ORIGYN-SA/minting-studio](https://github.com/ORIGYN-SA/claimlink) repository if you need deep technical details.
 
 #### 3. Create a Metadata Template
 
-You must first define the structure of your NFTs (such as size, material, or other attributes) by registering a JSON template. Run the command below to register your template structure.
+You must first define the structure of your NFTs by registering a JSON template. The easiest way is to use the [Visual Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/) — a drag-and-drop tool that generates the JSON for you. See the [Templates](templates.md) page for full details on template structure and field types.
+
+Once you have your template JSON, register it:
 
 ```bash
-dfx canister --network ic call zqa57-zaaaa-aaaah-qqopq-cai create_template '(record {
- template_json = "{\"size\": \"text\", \"material\": \"text\"}"
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(record {
+ template_json = "<your_template_json_here>"
 })'
 ```
 
@@ -52,7 +54,7 @@ Authorize the Minting Studio to spend the required fee from your wallet. Replace
 ```bash
 dfx canister --network ic call lkwrt-vyaaa-aaaaq-aadhq-cai icrc2_approve '(record {
   amount = 15000000000; 
-  spender = record { owner = principal "zqa57-zaaaa-aaaah-qqopq-cai"; }
+  spender = record { owner = principal "uasjq-dyaaa-aaaas-qdwka-cai"; }
 })'
 ```
 
@@ -61,7 +63,7 @@ dfx canister --network ic call lkwrt-vyaaa-aaaaq-aadhq-cai icrc2_approve '(recor
 Submit the final request to spin up your NFT canister using the create\_collection endpoint. Ensure you replace template\_id = 1 with the actual ID you received in Step 3.
 
 ```bash
-dfx canister --network ic call zqa57-zaaaa-aaaah-qqopq-cai create_collection '(record {
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(record {
   name = "My Unique Collection";
   description = "A collection of rare digital artifacts.";
   symbol = "MUC";
