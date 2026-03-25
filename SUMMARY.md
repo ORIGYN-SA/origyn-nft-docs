@@ -5,5 +5,8 @@
 ## Getting Started
 
 * [Installation](getting-started/quickstart.md)
+* [Templates](getting-started/templates.md)
+* [Collections & Certificates](getting-started/collections-and-certificates.md)
+* [Minting](getting-started/minting.md)
 * [Management](getting-started/publish-your-docs.md)
-* [Icrc37 - Icrc7](getting-started/icrc37-icrc7.md)
+* [ICRC-37 / ICRC-7](getting-started/icrc37-icrc7.md)
