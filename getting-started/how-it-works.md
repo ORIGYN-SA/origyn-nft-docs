@@ -21,17 +21,9 @@ A **template** is the blueprint for your certificates. It defines:
 
 Think of a template as a form design, it specifies the structure, but contains no actual data yet. You create a template once, then use it to mint as many certificates as you need.
 
-Here are examples of what certificates look like once minted from different templates — each template defines its own layout, fields, and background, while the actual data is filled in during minting:
+Here are examples of what certificates look like once minted from different templates — each template defines its own layout, fields, and background, while the actual data is filled in during minting. Click any image to expand it.
 
-<figure><img src="../.gitbook/assets/certificate-example-gold.png" alt="Gold bar certificate by Metalor, certified by FederItaly"><figcaption><p>Gold — 250g gold bar certified by Metalor</p></figcaption></figure>
-
-<figure><img src="../.gitbook/assets/certificate-example-diamond.png" alt="Diamond certificate by CyberOrigin with gemstone details"><figcaption><p>Diamonds — Gemstone certificate by CyberOrigin</p></figcaption></figure>
-
-<figure><img src="../.gitbook/assets/certificate-example-jewelry.png" alt="Jewelry certificate for Suzanne Syz Art Jewels"><figcaption><p>Jewelry — Art jewel certified by Suzanne Syz</p></figcaption></figure>
-
-<figure><img src="../.gitbook/assets/certificate-example-art.png" alt="Art sculpture certificate by Leo Caillard"><figcaption><p>Art — Sculpture certified by Leo Caillard</p></figcaption></figure>
-
-<figure><img src="../.gitbook/assets/certificate-example-football.png" alt="Football player certificate by UEFA"><figcaption><p>Sports — Player certificate by UEFA</p></figcaption></figure>
+<table data-view="cards"><thead><tr><th></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td><strong>Gold</strong></td><td><a href="../.gitbook/assets/certificate-example-gold.png">certificate-example-gold.png</a></td></tr><tr><td><strong>Diamonds</strong></td><td><a href="../.gitbook/assets/certificate-example-diamond.png">certificate-example-diamond.png</a></td></tr><tr><td><strong>Jewelry</strong></td><td><a href="../.gitbook/assets/certificate-example-jewelry.png">certificate-example-jewelry.png</a></td></tr><tr><td><strong>Art</strong></td><td><a href="../.gitbook/assets/certificate-example-art.png">certificate-example-art.png</a></td></tr><tr><td><strong>Sports</strong></td><td><a href="../.gitbook/assets/certificate-example-football.png">certificate-example-football.png</a></td></tr></tbody></table>
 
 ### Collections
 
