@@ -1,5 +1,5 @@
 ---
-icon: terminal
+icon: rectangle-code
 ---
 
 # Setup & Deployment
@@ -20,7 +20,7 @@ dfx identity get-principal
 
 in your terminal. Save this Principal ID, as it is required for authorization and ownership.
 
----
+***
 
 ### 1. Setup and Configuration
 
@@ -47,10 +47,10 @@ You can deploy the collection using the automated script provided in the reposit
 
 Alternatively, if you prefer manual control, you can use `dfx deploy` directly. This requires you to pass a complex argument record containing your principal permissions, collection name, symbol, and versioning details. Refer to the repository README for the full argument structure if choosing manual deployment.
 
----
+***
 
 ### What's Next?
 
-- **[CLI Management](cli-management.md)**: Use the CLI tools for uploading files, creating metadata, and minting tokens
-- **[Management](../getting-started/management.md)**: Manage permissions, update metadata, and upload files via dfx
-- **[ICRC-37 / ICRC-7](../getting-started/icrc37-icrc7.md)**: Technical reference for the NFT standards your collection implements
+* [**CLI Management**](cli-management.md): Use the CLI tools for uploading files, creating metadata, and minting tokens
+* [**Management**](../getting-started/management.md): Manage permissions, update metadata, and upload files via dfx
+* [**ICRC-37 / ICRC-7**](../getting-started/icrc37-icrc7.md): Technical reference for the NFT standards your collection implements
