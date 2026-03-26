@@ -41,7 +41,7 @@ In rare cases where automatic reimbursement encounters an issue, the status beco
 
 Before creating a collection, you need:
 1. A registered template (see [Templates](templates.md))
-2. An approved OGY spend allowance (see [Installation](quickstart.md))
+2. An approved OGY spend allowance (see [Getting Started](getting-started.md))
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(record {
@@ -108,7 +108,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collections_by_ow
 
 ## Certificates (NFTs)
 
-Certificates are the individual ORIGYN NFTs within a collection. Each certificate contains metadata structured according to the collection's template. They implement the ICRC-7 standard and can be transferred, approved, and queried using standard ICRC-7/ICRC-37 methods (see [ICRC-37 / ICRC-7](icrc37-icrc7.md)).
+Certificates are the individual ORIGYN NFTs within a collection. Each certificate contains metadata structured according to the collection's template. They implement the ICRC-7 standard and can be transferred, approved, and queried using standard ICRC-7/ICRC-37 methods (see [ICRC-37 / ICRC-7](../getting-started/icrc37-icrc7.md)).
 
 ### Viewing Certificate Details
 
@@ -145,30 +145,4 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_nfts '
 
 Use `prev` for pagination — pass the last token ID from the previous page to get the next set.
 
-***
-
-## End-to-End Flow
-
-Here is the complete flow from template to viewable certificate:
-
-```
-1. Create Template
-   └─ Design with Visual Template Builder or write JSON manually
-   └─ Register via create_template → get template_id
-
-2. Create Collection
-   └─ Approve OGY spend (icrc2_approve)
-   └─ Call create_collection with template_id
-   └─ Wait for TemplateUploaded status
-
-3. Mint Certificates
-   └─ Call initialize_mint → get mint_request_id
-   └─ Upload files (proxy_init_upload → proxy_store_chunk → proxy_finalize_upload)
-   └─ Call mint_nfts with metadata for each certificate
-   └─ Certificates are now live ORIGYN NFTs
-
-4. View & Manage
-   └─ Query certificates via get_nft_details or get_collection_nfts
-   └─ Transfer via standard ICRC-7 methods
-   └─ Manage permissions via the collection canister (see Management)
-```
+For the complete end-to-end flow from template design to certificate viewing, see [How It Works](../getting-started/how-it-works.md).

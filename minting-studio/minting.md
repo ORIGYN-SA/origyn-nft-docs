@@ -61,7 +61,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai initialize_mint '(rec
 
 **Returns:** `mint_request_id` (nat64) — save this, you will need it for all subsequent steps.
 
-This call will transfer OGY tokens from your wallet to cover the minting fee. Ensure you have approved the Minting Studio canister to spend from your OGY balance (via `icrc2_approve` as shown in [Installation](quickstart.md)).
+This call will transfer OGY tokens from your wallet to cover the minting fee. Ensure you have approved the Minting Studio canister to spend from your OGY balance (via `icrc2_approve` as shown in [Getting Started](getting-started.md)).
 
 **Errors:**
 * `CollectionNotReady` — The collection is not in TemplateUploaded status.
