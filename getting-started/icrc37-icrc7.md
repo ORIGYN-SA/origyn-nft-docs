@@ -15,7 +15,7 @@ This document outlines the technical standards implemented in the ORIGYN NFT can
 | ICRC-3       | History   | Maintains a secure, verified, and immutable log of all transactions.                    |
 | Indexer      | Query     | A companion service for filtering history by account or Token ID.                       |
 
-***
+---
 
 ### 1. ICRC-3: Transaction History
 
@@ -23,9 +23,9 @@ Purpose: The backbone of transparency. It records every action in a cryptographi
 
 #### Key Features
 
-* Validation: Prevents malformed data before writing to the ledger.
-* Certification: Ensures the state cannot be tampered with.
-* Archiving: Automatically offloads old history to separate archive canisters to manage storage.
+- Validation: Prevents malformed data before writing to the ledger.
+- Certification: Ensures the state cannot be tampered with.
+- Archiving: Automatically offloads old history to separate archive canisters to manage storage.
 
 #### Common Commands
 
@@ -52,12 +52,12 @@ Fetch Transaction Blocks
 _Retrieves a range of blocks (e.g., the first 10)._
 
 ```bash
-dfx canister call $NFT_CANISTER_ID icrc3_get_blocks "(vec { 
-  record { start = 0; length = 10 } 
+dfx canister call $NFT_CANISTER_ID icrc3_get_blocks "(vec {
+  record { start = 0; length = 10 }
 })" --network ic
 ```
 
-***
+---
 
 ### 2. ICRC-7: Core NFT Standard
 
@@ -65,8 +65,8 @@ Purpose: Handles the creation, ownership, and transfer of the NFTs.
 
 #### Key Features
 
-* Batch Operations: Supports transferring multiple tokens in one call.
-* Dynamic Metadata: Uses flexible storage (Maps, Arrays) for complex asset data.
+- Batch Operations: Supports transferring multiple tokens in one call.
+- Dynamic Metadata: Uses flexible storage (Maps, Arrays) for complex asset data.
 
 #### Collection Information
 
@@ -90,8 +90,8 @@ dfx canister call $NFT_CANISTER_ID icrc7_collection_metadata '()' --network ic
 Check Balance (Multiple Accounts)
 
 ```bash
-dfx canister call $NFT_CANISTER_ID icrc7_balance_of "(vec { 
-  record { owner = principal \"$(dfx identity get-principal)\"; subaccount = null } 
+dfx canister call $NFT_CANISTER_ID icrc7_balance_of "(vec {
+  record { owner = principal \"$(dfx identity get-principal)\"; subaccount = null }
 })" --network ic
 ```
 
@@ -119,13 +119,13 @@ List Tokens Owned by Account
 
 ```bash
 dfx canister call $NFT_CANISTER_ID icrc7_tokens_of "(
-  record { owner = principal \"$(dfx identity get-principal)\"; subaccount = null }, 
-  opt 0, 
+  record { owner = principal \"$(dfx identity get-principal)\"; subaccount = null },
+  opt 0,
   opt 10
 )" --network ic
 ```
 
-***
+---
 
 ### 3. ICRC-37: Token Approvals
 
@@ -193,7 +193,7 @@ dfx canister call $NFT_CANISTER_ID icrc37_transfer_from "(vec {
 })" --network ic
 ```
 
-***
+---
 
 ### 4. ICRC Indexer
 
@@ -214,8 +214,8 @@ _Filters the history to show only blocks involving a specific user._
 ```bash
 dfx canister call $INDEXER_ID get_blocks "(record {
   sort_by = opt variant { Ascending };
-  filters = vec { 
-    variant { Account = record { owner = principal \"TARGET_PRINCIPAL\"; subaccount = null } } 
+  filters = vec {
+    variant { Account = record { owner = principal \"TARGET_PRINCIPAL\"; subaccount = null } }
   };
   start = 0;
   length = 5;

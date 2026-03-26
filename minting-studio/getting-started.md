@@ -4,7 +4,7 @@ icon: bolt
 
 # Getting Started
 
-This guide walks you through launching an ORIGYN NFT collection using the Minting Studio — a managed service where ORIGYN handles the infrastructure. If you prefer full control over your smart contracts, see [Custom Installation](../custom-installation/setup.md) instead.
+This guide walks you through launching an ORIGYN NFT collection using the Minting Studio. It is a managed service where ORIGYN handles the infrastructure. If you prefer full control over your smart contracts, see [Custom Installation](../custom-installation/setup.md) instead.
 
 ### Prerequisites
 
@@ -18,7 +18,7 @@ dfx identity get-principal
 
 in your terminal. Save this Principal ID, as it is required for authorization and ownership.
 
-***
+---
 
 ### 1. Request Authorization
 
@@ -30,7 +30,7 @@ Ensure your wallet holds at least 15,000 OGY to cover the collection creation fe
 
 ### 3. Create a Metadata Template
 
-You must first define the structure of your NFTs by registering a JSON template. The easiest way is to use the [Visual Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/) — a drag-and-drop tool that generates the JSON for you. See the [Templates](templates.md) page for full details on template structure and field types.
+You must first define the structure of your NFTs by registering a JSON template. The easiest way is to use the [Visual Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/) the drag-and-drop tool that generates the JSON for you. See the [Templates](templates.md) page for full details on template structure and field types.
 
 Once you have your template JSON, register it:
 
@@ -40,7 +40,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(rec
 })'
 ```
 
-Note the template\_id returned by this command (e.g., 1), as you will need it shortly.
+Note the template_id returned by this command (e.g., 1), as you will need it shortly.
 
 ### 4. Approve Fee Payment
 
@@ -68,12 +68,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(r
 
 This command returns a `collection_id`. You can monitor the installation progress (which typically takes under a minute) by querying `get_collection_info` with this ID. Look for the status `TemplateUploaded` to confirm success. If the status is `Failed`, the protocol automatically reimburses the 15,000 OGY fee.
 
-***
+---
 
 ### What's Next?
 
 Your collection is now live. Here's what to do next:
 
-* **[Templates](templates.md)** — Learn more about template structure, field types, and the visual builder
-* **[Collections & Certificates](collections-and-certificates.md)** — Understand the collection lifecycle and how to query certificates
-* **[Minting](minting.md)** — Mint certificates into your collection with the full API flow
+- **[Templates](templates.md)** Learn more about template structure, field types, and the visual builder
+- **[Collections & Certificates](collections-and-certificates.md)** Understand the collection lifecycle and how to query certificates
+- **[Minting](minting.md)** Mint certificates into your collection with the full API flow

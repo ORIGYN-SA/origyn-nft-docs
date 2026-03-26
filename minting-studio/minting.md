@@ -11,13 +11,13 @@ Minting is the process of creating certificates (ORIGYN NFTs) within a collectio
 
 ### Prerequisites
 
-* A collection in **TemplateUploaded** status (see [Collections & Certificates](collections-and-certificates.md))
-* OGY tokens in your wallet for minting fees
-* Certificate data ready (text fields, images, documents)
+- A collection in **TemplateUploaded** status (see [Collections & Certificates](collections-and-certificates.md))
+- OGY tokens in your wallet for minting fees
+- Certificate data ready (text fields, images, documents)
 
 All commands below use the Minting Studio canister ID `uasjq-dyaaa-aaaas-qdwka-cai`.
 
-***
+---
 
 ## Step 1: Estimate Costs
 
@@ -33,19 +33,20 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai estimate_mint_cost '(
 
 **Returns:** A `MintCostEstimate` with:
 
-| Field | Description |
-|-------|-------------|
-| `total_ogy_e8s` | Total cost in OGY (e8s precision, divide by 100,000,000 for OGY) |
-| `total_usd_e8s` | Total cost in USD equivalent |
-| `ogy_usd_price_e8s` | Current OGY/USD exchange rate used |
-| `breakdown.base_fee_usd_e8s` | Base fee component |
-| `breakdown.storage_fee_usd_e8s` | Storage fee component (based on file sizes) |
+| Field                           | Description                                                      |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `total_ogy_e8s`                 | Total cost in OGY (e8s precision, divide by 100,000,000 for OGY) |
+| `total_usd_e8s`                 | Total cost in USD equivalent                                     |
+| `ogy_usd_price_e8s`             | Current OGY/USD exchange rate used                               |
+| `breakdown.base_fee_usd_e8s`    | Base fee component                                               |
+| `breakdown.storage_fee_usd_e8s` | Storage fee component (based on file sizes)                      |
 
 **Errors:**
-* `OgyPriceNotAvailable` — The OGY price oracle is temporarily unavailable. Try again shortly.
-* `MintPricingNotConfigured` — Minting pricing has not been configured for this canister.
 
-***
+- `OgyPriceNotAvailable`:The OGY price oracle is temporarily unavailable. Try again shortly.
+- `MintPricingNotConfigured`:Minting pricing has not been configured for this canister.
+
+---
 
 ## Step 2: Initialize Mint Request
 
@@ -59,17 +60,18 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai initialize_mint '(rec
 })'
 ```
 
-**Returns:** `mint_request_id` (nat64) — save this, you will need it for all subsequent steps.
+**Returns:** `mint_request_id` (nat64). Save this, you will need it for all subsequent steps.
 
 This call will transfer OGY tokens from your wallet to cover the minting fee. Ensure you have approved the Minting Studio canister to spend from your OGY balance (via `icrc2_approve` as shown in [Getting Started](getting-started.md)).
 
 **Errors:**
-* `CollectionNotReady` — The collection is not in TemplateUploaded status.
-* `CallerNotCollectionOwner` — You are not the owner of this collection.
-* `InvalidNumMints` — num_mints must be greater than 0.
-* `TransferFromError` — Insufficient OGY balance or approval.
 
-***
+- `CollectionNotReady`:The collection is not in TemplateUploaded status.
+- `CallerNotCollectionOwner`:You are not the owner of this collection.
+- `InvalidNumMints`:num_mints must be greater than 0.
+- `TransferFromError`:Insufficient OGY balance or approval.
+
+---
 
 ## Step 3: Upload Files
 
@@ -114,10 +116,11 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_finalize_upload
 **Returns:** The public URL of the uploaded file (e.g., `https://<canister_id>.raw.icp0.io/certificate_image.png`).
 
 **Errors:**
-* `ByteLimitExceeded` — Total uploaded bytes exceed the `total_file_size_bytes` specified in the mint request.
-* `Unauthorized` — You are not the owner of this mint request.
 
-***
+- `ByteLimitExceeded`:Total uploaded bytes exceed the `total_file_size_bytes` specified in the mint request.
+- `Unauthorized`:You are not the owner of this mint request.
+
+---
 
 ## Step 4: Mint Certificates
 
@@ -146,15 +149,16 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_nfts '(record {
 
 **Returns:** A vector of minted token IDs (nat).
 
-You can mint in batches — call `mint_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
+You can mint in batches or call `mint_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
 
 **Errors:**
-* `MintLimitExceeded` — You have already minted the maximum number of tokens for this request.
-* `TooManyItems` — Too many items in a single call. Reduce the batch size.
-* `NoItemsProvided` — The `mint_items` vector is empty.
-* `MintRequestNotActive` — The mint request has been refunded or is no longer active.
 
-***
+- `MintLimitExceeded`:You have already minted the maximum number of tokens for this request.
+- `TooManyItems`:Too many items in a single call. Reduce the batch size.
+- `NoItemsProvided`:The `mint_items` vector is empty.
+- `MintRequestNotActive`:The mint request has been refunded or is no longer active.
+
+---
 
 ## Step 5: Check Minting Status
 
@@ -166,27 +170,27 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(<y
 
 **Returns:** `MintRequestInfo` with:
 
-| Field | Description |
-|-------|-------------|
-| `status` | Current status (see below) |
-| `minted_count` | Number of tokens minted so far |
-| `num_mints` | Total number of mints requested |
-| `bytes_uploaded` | Total bytes uploaded |
-| `allocated_bytes` | Total bytes allocated |
-| `uploaded_files` | List of uploaded files with paths and URLs |
-| `ogy_charged` | OGY tokens charged for this request |
+| Field             | Description                                |
+| ----------------- | ------------------------------------------ |
+| `status`          | Current status (see below)                 |
+| `minted_count`    | Number of tokens minted so far             |
+| `num_mints`       | Total number of mints requested            |
+| `bytes_uploaded`  | Total bytes uploaded                       |
+| `allocated_bytes` | Total bytes allocated                      |
+| `uploaded_files`  | List of uploaded files with paths and URLs |
+| `ogy_charged`     | OGY tokens charged for this request        |
 
 **Mint Request Statuses:**
 
-| Status | Description |
-|--------|-------------|
-| `Initialized` | Request created, ready for uploads and minting |
-| `Completed` | All tokens have been minted |
-| `RefundRequested` | A refund has been requested |
-| `Refunded` | OGY tokens have been refunded |
-| `RefundFailed` | Refund attempt failed (see reason) |
+| Status            | Description                                    |
+| ----------------- | ---------------------------------------------- |
+| `Initialized`     | Request created, ready for uploads and minting |
+| `Completed`       | All tokens have been minted                    |
+| `RefundRequested` | A refund has been requested                    |
+| `Refunded`        | OGY tokens have been refunded                  |
+| `RefundFailed`    | Refund attempt failed (see reason)             |
 
-***
+---
 
 ## Requesting a Refund
 
@@ -201,10 +205,33 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai request_mint_refund '
 **Note:** Refunds are only available for mint requests that have not been fully completed. Tokens already minted will remain, and the refund covers the unused portion.
 
 **Errors:**
-* `NotInRefundableState` — The request is already completed or refunded.
-* `CreditsAlreadyUsed` — All minting credits have been used.
 
-***
+- `NotInRefundableState`:The request is already completed or refunded.
+- `CreditsAlreadyUsed`:All minting credits have been used.
+
+---
+
+## Burning Certificates
+
+To permanently destroy a certificate, the **token owner** can call `burn_nft` directly on the collection canister. This is an irreversible operation.
+
+```bash
+dfx canister call <collection_canister_id> burn_nft '(1 : nat)' --network ic
+```
+
+The argument is the `token_id` of the certificate to burn.
+
+**Returns:** Empty `Ok` on success.
+
+**Errors:**
+
+- `NotTokenOwner`: Only the current owner of the token can burn it.
+- `TokenDoesNotExist`: The specified token ID does not exist in this collection.
+- `ConcurrentManagementCall`: Another management operation is in progress. Retry the command.
+
+Burn events are recorded in the collection's ICRC-3 transaction history as `7burn` transactions.
+
+---
 
 ## Metadata Format (ICRC3)
 
@@ -221,14 +248,14 @@ vec {
 
 **Supported value types:**
 
-| Type | Candid | Use Case |
-|------|--------|----------|
-| `Text` | `variant { Text = "..." }` | String values (names, descriptions, URLs) |
-| `Nat` | `variant { Nat = 42 }` | Unsigned integers |
-| `Int` | `variant { Int = -1 }` | Signed integers |
-| `Blob` | `variant { Blob = blob "..." }` | Binary data (embedded images) |
-| `Array` | `variant { Array = vec {...} }` | Lists of values (galleries, multi-select) |
-| `Map` | `variant { Map = vec { record {...} } }` | Nested key-value pairs (localized content) |
+| Type    | Candid                                   | Use Case                                   |
+| ------- | ---------------------------------------- | ------------------------------------------ |
+| `Text`  | `variant { Text = "..." }`               | String values (names, descriptions, URLs)  |
+| `Nat`   | `variant { Nat = 42 }`                   | Unsigned integers                          |
+| `Int`   | `variant { Int = -1 }`                   | Signed integers                            |
+| `Blob`  | `variant { Blob = blob "..." }`          | Binary data (embedded images)              |
+| `Array` | `variant { Array = vec {...} }`          | Lists of values (galleries, multi-select)  |
+| `Map`   | `variant { Map = vec { record {...} } }` | Nested key-value pairs (localized content) |
 
 ### Multi-Language Metadata
 

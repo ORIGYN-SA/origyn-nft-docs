@@ -15,15 +15,15 @@ Templates define the structure, layout, and field types of your certificates (OR
 
 With the Template Builder you can:
 
-* Design certificate layouts visually with drag-and-drop
-* Add fields, images, sections, and backgrounds
-* Preview your certificate in real-time
-* Configure multi-language support
-* Export the final JSON file for registration via the API
+- Design certificate layouts visually with drag-and-drop
+- Add fields, images, sections, and backgrounds
+- Preview your certificate in real-time
+- Configure multi-language support
+- Export the final JSON file for registration via the API
 
 For most users, the Template Builder is all you need. The sections below cover the underlying JSON structure for advanced use cases or programmatic template creation.
 
-***
+---
 
 ## Template JSON Structure
 
@@ -44,20 +44,20 @@ A template is stored as a JSON string. At the top level:
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | string | Template display name |
-| `description` | string | Brief description of the template's purpose |
-| `category` | string | One of `manual`, `ai`, `existing`, or `preset` |
-| `structure` | object | The full template definition (sections, languages, background) |
-| `thumbnail` | string (optional) | Base64 data URI for a preview thumbnail |
+| Field         | Type              | Description                                                    |
+| ------------- | ----------------- | -------------------------------------------------------------- |
+| `name`        | string            | Template display name                                          |
+| `description` | string            | Brief description of the template's purpose                    |
+| `category`    | string            | One of `manual`, `ai`, `existing`, or `preset`                 |
+| `structure`   | object            | The full template definition (sections, languages, background) |
+| `thumbnail`   | string (optional) | Base64 data URI for a preview thumbnail                        |
 
 ### Sections
 
 Templates are organized into sections. The two standard sections are:
 
-* **Certificate** — The visual certificate tab. Contains the fields displayed prominently on the certificate.
-* **Information** — The detailed data tab. Contains additional metadata and supporting information.
+- **Certificate** The visual certificate tab. Contains the fields displayed prominently on the certificate.
+- **Information** The detailed data tab. Contains additional metadata and supporting information.
 
 ```json
 {
@@ -82,15 +82,15 @@ Templates are organized into sections. The two standard sections are:
 
 Each section contains items (fields). The following field types are supported:
 
-| Type | Description | Use Case |
-|------|-------------|----------|
-| `title` | Heading text | Section headings (h1–h4), supports alignment |
-| `input` | Data entry field | Text, number, date, email, URL, textarea |
-| `badge` | Tag/badge display | Status indicators, categories, predefined values |
-| `image` | Image upload | Single image with configurable aspect ratio and max size |
-| `video` | Video content | Video with duration, autoplay, and loop controls |
-| `document` | File upload | PDFs, Word documents, and other attachments |
-| `readonly` | Static text | Immutable content that cannot be edited during minting |
+| Type       | Description       | Use Case                                                 |
+| ---------- | ----------------- | -------------------------------------------------------- |
+| `title`    | Heading text      | Section headings (h1–h4), supports alignment             |
+| `input`    | Data entry field  | Text, number, date, email, URL, textarea                 |
+| `badge`    | Tag/badge display | Status indicators, categories, predefined values         |
+| `image`    | Image upload      | Single image with configurable aspect ratio and max size |
+| `video`    | Video content     | Video with duration, autoplay, and loop controls         |
+| `document` | File upload       | PDFs, Word documents, and other attachments              |
+| `readonly` | Static text       | Immutable content that cannot be edited during minting   |
 
 #### Field Properties
 
@@ -114,17 +114,17 @@ Every field has these common properties:
 }
 ```
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `id` | string | Unique identifier for this field |
-| `type` | string | Field type (see table above) |
-| `label` | string | Display label |
-| `order` | number | Position within the section (for drag-and-drop ordering) |
-| `required` | boolean | Whether the field must be filled during minting |
-| `immutable` | boolean | If true, the value cannot be changed after minting |
-| `description` | string | Helper text shown below the field |
-| `validation` | object | Validation rules (minLength, maxLength, pattern, errorMessage) |
-| `size` | string | Display size: `sm`, `md`, or `lg` |
+| Property      | Type    | Description                                                    |
+| ------------- | ------- | -------------------------------------------------------------- |
+| `id`          | string  | Unique identifier for this field                               |
+| `type`        | string  | Field type (see table above)                                   |
+| `label`       | string  | Display label                                                  |
+| `order`       | number  | Position within the section (for drag-and-drop ordering)       |
+| `required`    | boolean | Whether the field must be filled during minting                |
+| `immutable`   | boolean | If true, the value cannot be changed after minting             |
+| `description` | string  | Helper text shown below the field                              |
+| `validation`  | object  | Validation rules (minLength, maxLength, pattern, errorMessage) |
+| `size`        | string  | Display size: `sm`, `md`, or `lg`                              |
 
 ### Tree Format (Advanced)
 
@@ -137,7 +137,7 @@ Templates also support a tree-based node format for more complex layouts. This f
 
 The tree format is used internally and can be created through the Visual Template Builder.
 
-***
+---
 
 ## Multi-Language Support
 
@@ -153,8 +153,14 @@ Templates can define multiple languages for field labels and values:
   "translations": {
     "serial_number": {
       "en": { "label": "Serial Number", "placeholder": "Enter serial number" },
-      "fr": { "label": "Numero de serie", "placeholder": "Entrez le numero de serie" },
-      "it": { "label": "Numero di serie", "placeholder": "Inserisci il numero di serie" }
+      "fr": {
+        "label": "Numero de serie",
+        "placeholder": "Entrez le numero de serie"
+      },
+      "it": {
+        "label": "Numero di serie",
+        "placeholder": "Inserisci il numero di serie"
+      }
     }
   }
 }
@@ -162,7 +168,7 @@ Templates can define multiple languages for field labels and values:
 
 When certificates are minted with multi-language templates, the certificate viewer displays a language toggle to switch between translations.
 
-***
+---
 
 ## Background Customization
 
@@ -178,14 +184,14 @@ Templates support custom backgrounds for the certificate view:
 }
 ```
 
-| Option | Description |
-|--------|-------------|
+| Option             | Description                                    |
+| ------------------ | ---------------------------------------------- |
 | `type: "standard"` | Uses the default ORIGYN certificate background |
-| `type: "custom"` | Uses a custom image or video as background |
+| `type: "custom"`   | Uses a custom image or video as background     |
 
 **Size limit:** Background images should be under **800 KB**. The total template JSON must stay under **1.5 MB** to fit within the Internet Computer's 2 MB ingress message limit.
 
-***
+---
 
 ## Template API Reference
 
@@ -202,8 +208,9 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(rec
 **Returns:** `template_id` (nat) on success.
 
 **Errors:**
-* `LimitExceeded` — You have reached the maximum number of templates per owner.
-* `JsonError` — The JSON string is malformed.
+
+- `LimitExceeded` You have reached the maximum number of templates per owner.
+- `JsonError` The JSON string is malformed.
 
 ### Get a Template by ID
 
@@ -255,13 +262,13 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai delete_template '(1)'
 
 **Note:** Only the template owner can delete their templates.
 
-***
+---
 
 ## Size Limits
 
-| Limit | Value | Reason |
-|-------|-------|--------|
-| Max template JSON | 1.5 MB | Fits within the IC 2 MB ingress message limit |
-| Background images | ~800 KB | Keeps template size manageable |
-| Templates per owner | Configurable | Enforced by the Minting Studio canister |
-| Pagination limit | 2 per query | Avoids exceeding the 3 MB IC response limit |
+| Limit               | Value        | Reason                                        |
+| ------------------- | ------------ | --------------------------------------------- |
+| Max template JSON   | 1.5 MB       | Fits within the IC 2 MB ingress message limit |
+| Background images   | ~800 KB      | Keeps template size manageable                |
+| Templates per owner | Configurable | Enforced by the Minting Studio canister       |
+| Pagination limit    | 2 per query  | Avoids exceeding the 3 MB IC response limit   |
