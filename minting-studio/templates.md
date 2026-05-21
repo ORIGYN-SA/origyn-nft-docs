@@ -54,10 +54,12 @@ A template is stored as a JSON string. At the top level:
 
 ### Sections
 
-Templates are organized into sections. The two standard sections are:
+Templates are organized into sections. Templates support up to **5 sections** in total. The two standard sections are:
 
 - **Certificate** The visual certificate tab. Contains the fields displayed prominently on the certificate.
 - **Information** The detailed data tab. Contains additional metadata and supporting information.
+
+Beyond these two, you can declare additional custom sections (for example, a "Provenance" or "Service History" tab). Each section has its own `id`, `name`, `order`, and `items` array, exactly like the standard sections.
 
 ```json
 {
@@ -90,7 +92,10 @@ Each section contains items (fields). The following field types are supported:
 | `image`    | Image upload      | Single image with configurable aspect ratio and max size |
 | `video`    | Video content     | Video with duration, autoplay, and loop controls         |
 | `document` | File upload       | PDFs, Word documents, and other attachments              |
+| `signature`| Signature image   | Image upload semantically marked as a signature (same `FileReference` shape as `image`) |
 | `readonly` | Static text       | Immutable content that cannot be edited during minting   |
+
+> Each field `id` becomes a top-level key in the per-NFT mint JSON. See [Minting → Producing your mint JSON from a template](minting.md#producing-your-mint-json-from-a-template) for the mapping rules and a worked example.
 
 #### Field Properties
 

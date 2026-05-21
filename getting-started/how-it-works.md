@@ -65,7 +65,7 @@ Certificates represent verified real-world assets like gold bars, diamonds, watc
 
 3. Mint Certificates
    └─ Upload files (images, documents) to the collection
-   └─ Provide metadata for each certificate
+   └─ Provide JSON metadata for each certificate (validated server-side against the template)
    └─ Certificates become live ORIGYN NFTs with unique token IDs
 
 4. View & Manage
