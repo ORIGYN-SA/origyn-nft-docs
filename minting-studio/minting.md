@@ -124,10 +124,10 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_finalize_upload
 
 ## Step 4: Mint Certificates
 
-With files uploaded, mint the certificates by providing metadata for each one:
+With files uploaded, mint the certificates by providing a JSON metadata string for each one. The Minting Studio validates the JSON server-side against the collection's template before minting.
 
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_nfts '(record {
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_json_nfts '(record {
   mint_request_id = <your_mint_request_id> : nat64;
   mint_items = vec {
     record {
@@ -135,28 +135,77 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_nfts '(record {
         owner = principal "<recipient_principal>";
         subaccount = null
       };
-      metadata = vec {
-        record { "name"; variant { Text = "Gold Bar #001" } };
-        record { "serial_number"; variant { Text = "GB-2026-001" } };
-        record { "weight"; variant { Text = "1 oz" } };
-        record { "image"; variant { Text = "https://<canister>.raw.icp0.io/certificate_image.png" } };
-      };
+      json_metadata = "<json string, see Producing your mint JSON below>";
       memo = null
     }
   }
 })'
 ```
 
-**Returns:** A vector of minted token IDs (nat).
+**Returns:** A vector of minted token IDs (nat), one per `mint_items` entry in order.
 
-You can mint in batches or call `mint_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
+You can mint in batches or call `mint_json_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
 
-**Errors:**
+**Errors (`MintJsonNftsError`):**
 
-- `MintLimitExceeded`:You have already minted the maximum number of tokens for this request.
-- `TooManyItems`:Too many items in a single call. Reduce the batch size.
-- `NoItemsProvided`:The `mint_items` vector is empty.
-- `MintRequestNotActive`:The mint request has been refunded or is no longer active.
+- `MintRequestNotFound`: No mint request exists for the given ID.
+- `Unauthorized`: You are not the owner of this mint request.
+- `MintRequestNotActive`: The mint request has been refunded or is no longer active.
+- `MintLimitExceeded { allowed, already_minted, requested }`: This batch would exceed the request's `num_mints` cap.
+- `NoItemsProvided`: The `mint_items` vector is empty.
+- `TooManyItems { max }`: Batch is larger than the per-call limit.
+- `JsonTooLarge { index, max, got }`: The `json_metadata` for the item at `index` exceeds the per-item byte cap.
+- `BrokenJsonMetadata`: The `json_metadata` string is not valid JSON.
+- `InvalidMetadata`: The JSON parsed but failed validation against the template (missing required field, wrong shape for a field, etc.).
+- `MintError(text)`: Underlying mint call to the collection canister failed.
+
+---
+
+## Producing your mint JSON from a template
+
+The `json_metadata` you pass to `mint_json_nfts` is a JSON object whose keys are template field `id`s. The Minting Studio validates it against the template registered for the collection.
+
+### Mapping rules
+
+1. **Top-level keys** are template field `id`s. Anything not declared in the template is rejected.
+2. **Plain string field** value: `{ "content": "..." }`.
+3. **Localized string field** (template declares multiple `languages`): `{ "content": { "en": "...", "fr": "...", "it": "..." } }`. Omitted languages fall back to the default language.
+4. **File-bearing field** (`image`, `video`, `document`, `signature`): an array of `FileReference` objects, `[ { "id": "<file_id>", "path": "<file_path>" } ]`, where `path` matches the `file_path` you used in `proxy_init_upload` / `proxy_finalize_upload`.
+5. **Date field**: `{ "content": { "date": <epoch_ms> } }`.
+
+### Reserved field IDs
+
+If you want the certificate to render correctly in the standard ORIGYN viewer, use these IDs for fields that serve display roles:
+
+| Purpose                  | Field IDs (priority order)                          |
+| ------------------------ | --------------------------------------------------- |
+| Certificate title        | `name`, `company_name`, `certificate_title`         |
+| Certificate image        | `certificate_image` (FileReference) or `stamp_upload` (string URL) |
+| Description              | `description`, `short_description`                  |
+| Company logo (header)    | `company_logo`                                      |
+| Issuer ("Certified by")  | `certified_by`                                      |
+
+### Worked example
+
+Given a template with these fields:
+
+- `name` (input, localized en + fr)
+- `serial_number` (input, plain string)
+- `certificate_image` (image)
+- `certified_by` (input, plain string)
+
+And assuming you uploaded `gold_bar_001.png` in Step 3, the `json_metadata` for one certificate looks like:
+
+```json
+{
+  "name": { "content": { "en": "Gold Bar #001", "fr": "Lingot d'or #001" } },
+  "serial_number": { "content": "GB-2026-001" },
+  "certificate_image": [{ "id": "img_1", "path": "gold_bar_001.png" }],
+  "certified_by": { "content": "ORIGYN" }
+}
+```
+
+Stringify that JSON and pass it as `json_metadata` in the `mint_json_nfts` call above.
 
 ---
 
@@ -233,9 +282,43 @@ Burn events are recorded in the collection's ICRC-3 transaction history as `7bur
 
 ---
 
-## Metadata Format (ICRC3)
+## Legacy: `mint_nfts` (ICRC3Value)
 
-Certificate metadata is stored as key-value pairs following the ICRC3 standard. Each pair consists of a text key and an `ICRC3Value`:
+`mint_json_nfts` is the supported mint endpoint going forward. The earlier `mint_nfts` endpoint, which accepts ICRC3Value variant trees instead of a JSON string, is preserved for existing integrations. Unlike `mint_json_nfts`, it does **not** validate against the template.
+
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_nfts '(record {
+  mint_request_id = <your_mint_request_id> : nat64;
+  mint_items = vec {
+    record {
+      token_owner = record {
+        owner = principal "<recipient_principal>";
+        subaccount = null
+      };
+      metadata = vec {
+        record { "name"; variant { Text = "Gold Bar #001" } };
+        record { "serial_number"; variant { Text = "GB-2026-001" } };
+        record { "weight"; variant { Text = "1 oz" } };
+        record { "image"; variant { Text = "https://<canister>.raw.icp0.io/certificate_image.png" } };
+      };
+      memo = null
+    }
+  }
+})'
+```
+
+**Returns:** A vector of minted token IDs (nat).
+
+**Errors:**
+
+- `MintLimitExceeded`: You have already minted the maximum number of tokens for this request.
+- `TooManyItems`: Too many items in a single call. Reduce the batch size.
+- `NoItemsProvided`: The `mint_items` vector is empty.
+- `MintRequestNotActive`: The mint request has been refunded or is no longer active.
+
+### ICRC3 Metadata Format
+
+Metadata passed to `mint_nfts` is stored as key-value pairs following the ICRC3 standard. Each pair is a text key and an `ICRC3Value`:
 
 ```
 vec {
@@ -257,9 +340,7 @@ vec {
 | `Array` | `variant { Array = vec {...} }`          | Lists of values (galleries, multi-select)  |
 | `Map`   | `variant { Map = vec { record {...} } }` | Nested key-value pairs (localized content) |
 
-### Multi-Language Metadata
-
-For multi-language certificates, store localized values using the `Map` type:
+**Multi-Language Metadata:** for multi-language certificates, store localized values using the `Map` type:
 
 ```
 record { "product_name"; variant {
