@@ -220,7 +220,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nfts_by_owner '(r
   owner      = principal "<owner_principal>";
   collection = null;
   statuses   = null;
-  pagination = record { offset = opt 0 : opt nat64; limit = opt 50 : opt nat64 }
+  pagination = record { offset = opt 0; limit = opt 50 }
 })'
 ```
 
@@ -249,7 +249,7 @@ Lists NFTs currently held by a specific `Account`, regardless of who minted them
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nfts_by_holder '(record {
   holder     = record { owner = principal "<holder_principal>"; subaccount = null };
   collection = null;
-  pagination = record { offset = opt 0 : opt nat64; limit = opt 50 : opt nat64 }
+  pagination = record { offset = opt 0; limit = opt 50 }
 })'
 ```
 
@@ -262,7 +262,7 @@ Lists NFTs that `holder` previously owned and no longer holds (transferred away 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_past_nfts_by_holder '(record {
   holder     = record { owner = principal "<holder_principal>"; subaccount = null };
-  pagination = record { offset = opt 0 : opt nat64; limit = opt 50 : opt nat64 }
+  pagination = record { offset = opt 0; limit = opt 50 }
 })'
 ```
 
@@ -285,7 +285,7 @@ Lists current holders of every token in a collection.
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_holders_by_collection '(record {
   collection = principal "<collection_canister_id>";
-  pagination = record { offset = opt 0 : opt nat64; limit = opt 100 : opt nat64 }
+  pagination = record { offset = opt 0; limit = opt 100 }
 })'
 ```
 
