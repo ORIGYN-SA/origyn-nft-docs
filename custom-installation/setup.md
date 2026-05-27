@@ -52,5 +52,5 @@ Alternatively, if you prefer manual control, you can use `dfx deploy` directly. 
 ### What's Next?
 
 * [**CLI Management**](cli-management.md): Use the CLI tools for uploading files, creating metadata, and minting tokens
-* [**Management**](../getting-started/management.md): Manage permissions, update metadata, and upload files via dfx
-* [**ICRC-37 / ICRC-7**](../getting-started/icrc37-icrc7.md): Technical reference for the NFT standards your collection implements
+* [**Management**](../managing-your-collection/management.md): Manage permissions, update metadata, and upload files via dfx
+* [**ICRC-37 / ICRC-7**](../technical-reference/icrc37-icrc7.md): Technical reference for the NFT standards your collection implements

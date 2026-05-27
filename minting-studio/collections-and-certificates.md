@@ -2,7 +2,8 @@
 icon: layer-group
 metaLinks:
   alternates:
-    - https://app.gitbook.com/s/yE16Xb3IemPxJWydtPOj/getting-started/collections-and-certificates
+    - >-
+      https://app.gitbook.com/s/yE16Xb3IemPxJWydtPOj/getting-started/collections-and-certificates
 ---
 
 # Collections & Certificates
@@ -35,7 +36,7 @@ Failed → ReimbursingQueued → Reimbursed
 
 In rare cases where automatic reimbursement encounters an issue, the status becomes `QuarantinedReimbursement` and requires manual resolution.
 
----
+***
 
 ### Creating a Collection
 
@@ -66,7 +67,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(r
 
 The collection creation process typically completes in under a minute. Monitor progress with `get_collection_info`.
 
----
+***
 
 ### Querying Collections
 
@@ -89,7 +90,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_info \
 | `collection_id` | Unique collection identifier                                 |
 | `status`        | Current lifecycle status                                     |
 | `canister_id`   | The ORIGYN NFT canister principal (available after creation) |
-| `metadata`      | Collection name, symbol, description, and template_id        |
+| `metadata`      | Collection name, symbol, description, and template\_id       |
 | `owner`         | Principal of the collection creator                          |
 | `ogy_charged`   | OGY tokens charged for creation                              |
 | `created_at`    | Creation timestamp                                           |
@@ -105,13 +106,13 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collections_by_ow
 
 **Returns:** `CollectionsResult` with a vector of `CollectionInfo` and `total_count`.
 
----
+***
 
 ## Certificates (NFTs)
 
-Certificates are the individual ORIGYN NFTs within a collection. Each certificate contains metadata structured according to the collection's template. They implement the ICRC-7 standard and can be transferred, approved, and queried using standard ICRC-7/ICRC-37 methods (see [ICRC-37 / ICRC-7](../getting-started/icrc37-icrc7.md)).
+Certificates are the individual ORIGYN NFTs within a collection. Each certificate contains metadata structured according to the collection's template. They implement the ICRC-7 standard and can be transferred, approved, and queried using standard ICRC-7/ICRC-37 methods (see [ICRC-37 / ICRC-7](../technical-reference/icrc37-icrc7.md)).
 
-> **Looking for JSON metadata or paginated listings?** The endpoints in this section return raw ICRC-7 metadata at the collection canister level. For ready-to-render JSON plus collection info (name, symbol, logo) in a single response, see [Querying NFTs (indexer-backed)](#querying-nfts-indexer-backed) at the bottom of this page.
+> **Looking for JSON metadata or paginated listings?** The endpoints in this section return raw ICRC-7 metadata at the collection canister level. For ready-to-render JSON plus collection info (name, symbol, logo) in a single response, see [Querying NFTs (indexer-backed)](collections-and-certificates.md#querying-nfts-indexer-backed) at the bottom of this page.
 
 ### Viewing Certificate Details
 
@@ -148,16 +149,16 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_nfts '
 
 Use `prev` for pagination pass the last token ID from the previous page to get the next set.
 
-For the complete end-to-end flow from template design to certificate viewing, see [How It Works](../getting-started/how-it-works.md).
+For the complete end-to-end flow from template design to certificate viewing, see [How It Works](../core-concepts/how-it-works.md).
 
----
+***
 
 ## Querying NFTs (indexer-backed)
 
 The Minting Studio runs an indexer that follows the ICRC-3 transaction stream of every collection it has provisioned. The endpoints below are served from that index. Compared to the lower-level `get_nft_details` / `get_collection_nfts` calls above, they return:
 
-- `metadata_json: text` for each NFT, ready to parse and render (see [Producing your mint JSON](minting.md#producing-your-mint-json-from-a-template) for the shape).
-- `collections` info (name, symbol, description, logo) bundled into every paginated response, so you do not need a separate ICRC-7 round trip.
+* `metadata_json: text` for each NFT, ready to parse and render (see [Producing your mint JSON](minting.md#producing-your-mint-json-from-a-template) for the shape).
+* `collections` info (name, symbol, description, logo) bundled into every paginated response, so you do not need a separate ICRC-7 round trip.
 
 ### Pagination model
 
@@ -170,10 +171,10 @@ type PaginationArgs = record {
 };
 ```
 
-| Field    | Default | Notes                                  |
-| -------- | ------- | -------------------------------------- |
-| `offset` | `0`     | Number of items to skip                |
-| `limit`  | `100`   | Capped at `100` server-side            |
+| Field    | Default | Notes                       |
+| -------- | ------- | --------------------------- |
+| `offset` | `0`     | Number of items to skip     |
+| `limit`  | `100`   | Capped at `100` server-side |
 
 Responses use the same envelope:
 
@@ -200,13 +201,13 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nft '(record {
 
 **Returns:** `opt NftDetailView`. `null` if the token does not exist or has not been indexed yet.
 
-| Field                   | Description                                              |
-| ----------------------- | -------------------------------------------------------- |
-| `nft.collection`        | Collection canister principal                            |
-| `nft.token_id`          | Token ID within the collection                           |
-| `nft.owner`             | Current owner (`opt Account`)                            |
-| `nft.metadata_json`     | The JSON metadata string the NFT was minted with         |
-| `collection_info`       | Name, symbol, description, logo for the collection       |
+| Field               | Description                                        |
+| ------------------- | -------------------------------------------------- |
+| `nft.collection`    | Collection canister principal                      |
+| `nft.token_id`      | Token ID within the collection                     |
+| `nft.owner`         | Current owner (`opt Account`)                      |
+| `nft.metadata_json` | The JSON metadata string the NFT was minted with   |
+| `collection_info`   | Name, symbol, description, logo for the collection |
 
 ### `get_nfts_by_owner` (collection-owner view)
 
@@ -224,22 +225,22 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nfts_by_owner '(r
 })'
 ```
 
-| Arg          | Type                       | Description                                            |
-| ------------ | -------------------------- | ------------------------------------------------------ |
-| `owner`      | `principal`                | Collection-owner principal                             |
-| `collection` | `opt principal`            | Filter to a single collection canister                 |
-| `statuses`   | `opt vec NftStatus`        | Filter by `Minted`, `Transferred`, and/or `Received`   |
-| `pagination` | `PaginationArgs`           | See above                                              |
+| Arg          | Type                | Description                                          |
+| ------------ | ------------------- | ---------------------------------------------------- |
+| `owner`      | `principal`         | Collection-owner principal                           |
+| `collection` | `opt principal`     | Filter to a single collection canister               |
+| `statuses`   | `opt vec NftStatus` | Filter by `Minted`, `Transferred`, and/or `Received` |
+| `pagination` | `PaginationArgs`    | See above                                            |
 
 **Returns:** `PaginatedResponse<NftViewWithStatus>`. Each item has the standard `NftView` fields plus `status`.
 
 **`NftStatus`:**
 
-| Variant       | Meaning                                                                          |
-| ------------- | -------------------------------------------------------------------------------- |
-| `Minted`      | From `owner`'s collection, currently held by `owner`.                            |
-| `Transferred` | From `owner`'s collection, currently held by another account.                    |
-| `Received`    | Not from `owner`'s collection but currently held by `owner`.                     |
+| Variant       | Meaning                                                       |
+| ------------- | ------------------------------------------------------------- |
+| `Minted`      | From `owner`'s collection, currently held by `owner`.         |
+| `Transferred` | From `owner`'s collection, currently held by another account. |
+| `Received`    | Not from `owner`'s collection but currently held by `owner`.  |
 
 ### `get_nfts_by_holder` (holder-account view)
 
@@ -268,13 +269,13 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_past_nfts_by_hold
 
 **Returns:** `PaginatedResponse<PastNftView>`. Each item:
 
-| Field            | Description                                                                  |
-| ---------------- | ---------------------------------------------------------------------------- |
-| `acquired_at`    | Nanosecond timestamp when `holder` acquired the token                        |
-| `released_at`    | Nanosecond timestamp when `holder` lost the token                            |
-| `release_reason` | `variant { Transfer = record { to : Account } }` or `variant { Burn }`       |
-| `current_owner`  | Whoever holds the token now (`null` if burned)                               |
-| `metadata_json`  | JSON metadata string                                                         |
+| Field            | Description                                                            |
+| ---------------- | ---------------------------------------------------------------------- |
+| `acquired_at`    | Nanosecond timestamp when `holder` acquired the token                  |
+| `released_at`    | Nanosecond timestamp when `holder` lost the token                      |
+| `release_reason` | `variant { Transfer = record { to : Account } }` or `variant { Burn }` |
+| `current_owner`  | Whoever holds the token now (`null` if burned)                         |
+| `metadata_json`  | JSON metadata string                                                   |
 
 Use this for an owner's burn / transfer history view.
 
@@ -301,13 +302,13 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_account_stats '(r
 })'
 ```
 
-| Field                  | Description                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------------- |
-| `total_owned`          | Total tokens currently owned across all collections                                      |
-| `per_collection`       | `vec record { principal; nat64 }`: owned count per collection                            |
-| `distinct_collections` | Number of distinct collections in which the account holds at least one token             |
-| `first_activity_nanos` | First time this account was observed (`opt nat64`)                                       |
-| `last_activity_nanos`  | Most recent activity (`opt nat64`)                                                       |
+| Field                  | Description                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| `total_owned`          | Total tokens currently owned across all collections                          |
+| `per_collection`       | `vec record { principal; nat64 }`: owned count per collection                |
+| `distinct_collections` | Number of distinct collections in which the account holds at least one token |
+| `first_activity_nanos` | First time this account was observed (`opt nat64`)                           |
+| `last_activity_nanos`  | Most recent activity (`opt nat64`)                                           |
 
 ### `get_collection_stats`
 
@@ -317,8 +318,8 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_stats 
 })'
 ```
 
-| Field                | Description                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------ |
-| `distinct_holders`   | Number of distinct accounts holding at least one token in this collection            |
-| `total_tokens`       | Total tokens of this collection currently tracked by the indexer                     |
-| `next_indexed_block` | First ICRC-3 block id the indexer has not yet processed (use as a freshness probe)   |
+| Field                | Description                                                                        |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `distinct_holders`   | Number of distinct accounts holding at least one token in this collection          |
+| `total_tokens`       | Total tokens of this collection currently tracked by the indexer                   |
+| `next_indexed_block` | First ICRC-3 block id the indexer has not yet processed (use as a freshness probe) |

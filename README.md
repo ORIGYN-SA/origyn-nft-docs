@@ -1,8 +1,6 @@
 ---
 icon: gem
-metaLinks:
-  alternates:
-    - https://app.gitbook.com/s/yE16Xb3IemPxJWydtPOj/
+metaLinks: {}
 ---
 
 # ORIGYN NFT
@@ -20,8 +18,6 @@ On the other hand ORIGYN NFT stores everything on the blockchain. High-definitio
 **2. The "Perpetual OS" Concept**
 
 An ORIGYN NFT is technically a Canister (a smart contract with storage) on the Internet Computer. This means the NFT is an active software application, not a static file. Therefor, the NFT can update its own status (e.g., adding a service record when a watch is repaired).
-
-
 
 ### Use Cases
 

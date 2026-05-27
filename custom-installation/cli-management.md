@@ -4,7 +4,7 @@ icon: rectangle-terminal
 
 # CLI Management
 
-Target Audience: Users who cloned the repo, built the `origyn_icrc7_cmdlinetools` binary, and have full terminal access. For DFX-based management (applicable to both Minting Studio and Custom Installation), see [Management](../getting-started/management.md).
+Target Audience: Users who cloned the repo, built the `origyn_icrc7_cmdlinetools` binary, and have full terminal access. For DFX-based management (applicable to both Minting Studio and Custom Installation), see [Management](../managing-your-collection/management.md).
 
 ### Environment Setup
 
