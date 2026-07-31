@@ -44,6 +44,10 @@ This means you **do not** need to call `grant_permission` or `revoke_permission`
 
 If you need to change the collection name, description, or logo after launch, you can do so directly since you have the `UpdateCollectionMetadata` permission.
 
+{% hint style="info" %}
+This is the method on **your collection canister**. The Minting Studio has a separate method of the same name that edits the collection through the studio; if you are integrating over HTTP, use that one instead. See [Managing Collections](../minting-studio/managing-collections.md).
+{% endhint %}
+
 ```bash
 dfx canister call $NFT_CANISTER_ID update_collection_metadata "(record {
   name = opt \"New Collection Name\";

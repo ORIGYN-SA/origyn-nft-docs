@@ -109,6 +109,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_info \
 
 #### List Your Collections
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/owners/{principal}/collections" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collections_by_owner '(record {
   owner = principal "<your_principal>";

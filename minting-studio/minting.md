@@ -25,7 +25,13 @@ Every step here is also available over HTTP with an API key. See the [REST API O
 
 ## Step 1: Estimate Costs
 
-Before minting, you can estimate the total cost:
+Before minting, estimate the total cost. This is free and charges nothing.
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/estimate" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai estimate_mint_cost '(record {
@@ -46,8 +52,8 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai estimate_mint_cost '(
 
 **Errors:**
 
-- `OgyPriceNotAvailable`:The OGY price oracle is temporarily unavailable. Try again shortly.
-- `MintPricingNotConfigured`:Minting pricing has not been configured for this canister.
+- `OgyPriceNotAvailable`: The OGY price oracle is temporarily unavailable. Try again shortly.
+- `MintPricingNotConfigured`: Minting pricing has not been configured for this canister.
 
 ---
 
@@ -97,6 +103,12 @@ If your certificates include images, documents, or other files, upload them befo
 
 #### A. Initialize Upload
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/init_upload" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_init_upload '(record {
   mint_request_id = <your_mint_request_id> : nat64;
@@ -111,6 +123,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_init_upload '(r
 
 For files larger than 2 MB, split them into chunks. Each chunk is uploaded separately:
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/store_chunk" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_store_chunk '(record {
   mint_request_id = <your_mint_request_id> : nat64;
@@ -123,6 +141,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_store_chunk '(r
 Repeat for each chunk, incrementing `chunk_id`.
 
 #### C. Finalize Upload
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/finalize_upload" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_finalize_upload '(record {
@@ -144,27 +168,10 @@ Keep this returned URL. It is the value you put in `path` when you reference the
 - `ByteLimitExceeded`: Total uploaded bytes exceed the `total_file_size_bytes` specified in the mint request.
 - `Unauthorized`: You are not the owner of this mint request.
 
-#### Over REST
-
-The same three steps. Chunk bytes are sent as the raw request body.
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/init_upload" method="post" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/store_chunk" method="post" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/finalize_upload" method="post" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
-
-`finalize_upload` returns `{ "file_url": "..." }`. Chunk ids start at 0.
-
 {% hint style="warning" %}
 **Only re-send a chunk that returned an error.** Uploaded bytes are counted per successful `store_chunk` call, not per `chunk_id`, so re-sending a chunk that already succeeded counts its bytes twice against the storage you paid for at `initialize_mint`.
 {% endhint %}
+
 
 ---
 
@@ -302,6 +309,12 @@ Stringify that JSON and pass it as `json_metadata`.
 
 Monitor the progress of your mint request:
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/mint_requests/{id}" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(<your_mint_request_id> : nat64)'
 ```
@@ -344,6 +357,12 @@ There are two ways to end a mint request, and picking the wrong one is the most 
 
 Settles a request you have used. The OGY you consumed is burned, and the unused portion of **both** reservations is refunded: capacity you did not mint, and storage you did not upload.
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/close_mint_request" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai close_mint_request '(record {
   mint_request_id = <your_mint_request_id> : nat64
@@ -357,6 +376,12 @@ If you forget, the hourly sweep settles any request left idle for 24 hours on ex
 ### `request_mint_refund` (untouched requests only)
 
 Refunds a request you have **not used at all**, all or nothing.
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/request_mint_refund" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai request_mint_refund '(record {
