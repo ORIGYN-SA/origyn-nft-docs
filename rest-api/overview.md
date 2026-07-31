@@ -118,12 +118,17 @@ Write endpoints return a consistent JSON body:
 | `400` | Malformed request | `missing_idempotency_key`, `invalid_id`, `invalid_metadata`, `unknown_category` |
 | `401` | Bad or revoked key | `unauthorized` |
 | `402` | Not enough OGY | `insufficient_allowance`, `insufficient_funds` |
-| `403` | Not permitted | `not_owner`, `not_delegable`, `not_authorized` |
+| `403` | Not permitted | `not_owner`, `not_delegable`, `not_authorized`, `file_not_uploaded` |
 | `404` | No such thing | `not_found` |
 | `409` | Conflict | `idempotency_key_conflict`, `concurrent_request`, `collection_not_ready`, `mint_limit_exceeded` |
+| `413` | Body too large | plain-text, no JSON envelope (see the batch-size note in [Minting](../minting-studio/minting.md#step-4-mint-certificates)) |
 | `502` | Upstream unavailable | `upstream_unavailable` |
 
 Read endpoints return a plain-text message with the status code rather than a JSON envelope.
+
+{% hint style="info" %}
+`GET /allowance` reports your standing ICRC-2 **approval** to the Minting Studio, not your OGY **balance**. A paid call can still fail with `402 insufficient_funds` while that endpoint shows a large number: the approval is a ceiling, the balance is what is actually spendable. There is no pre-flight balance check over REST.
+{% endhint %}
 
 ## Two ways in
 

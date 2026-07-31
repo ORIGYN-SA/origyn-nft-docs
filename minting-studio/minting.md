@@ -205,18 +205,39 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_json_nfts '(reco
 
 You can mint in batches or call `mint_json_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
 
+### Attaching uploaded files (`public_content`)
+
+Each entry in `mint_items` may carry an optional `public_content`: a list of `entry name -> file_path` pairs that attach files you uploaded during this mint request to the certificate.
+
+```json
+"public_content": [
+  { "name": "certificate_image", "file_path": "gold_bar_001.png" }
+]
+```
+
+`file_path` is the name you gave `init_upload`. Stored uploads are namespaced by session as `{mint_request_id}/{name}`, and the Minting Studio accepts either spelling, so both `gold_bar_001.png` and `77/gold_bar_001.png` resolve to the same file. If you need the exact stored path, `GET /mint_requests/{id}` lists it under `uploaded_files[].file_path`.
+
+{% hint style="info" %}
+This is separate from the file references inside `data`. `public_content` attaches the file to the token itself; the `data` block points at a file by URL (see [Producing your mint JSON](#producing-your-mint-json-from-a-template)). Most certificates set both, pointing at the same upload.
+{% endhint %}
+
 **Errors (`MintJsonNftsError`):**
 
 - `MintRequestNotFound`: No mint request exists for the given ID.
 - `Unauthorized`: You are not the owner of this mint request.
+- `UnauthorizedFile { file_path }`: A `public_content` entry names a file you have not uploaded to this collection. Over REST this is `403 file_not_uploaded` and the message names the path. Check it against `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
 - `MintRequestNotActive`: The mint request has been refunded or is no longer active.
 - `MintLimitExceeded { allowed, already_minted, requested }`: This batch would exceed the request's `num_mints` cap.
 - `NoItemsProvided`: The `mint_items` vector is empty.
-- `TooManyItems { max }`: Batch is larger than the per-call limit.
-- `JsonTooLarge { index, max, got }`: The `json_metadata` for the item at `index` exceeds the per-item byte cap.
+- `TooManyItems { max }`: More than **50** items in one call. Split the batch.
+- `JsonTooLarge { index, max, got }`: The `json_metadata` for the item at `index` is over **50 KiB**.
 - `BrokenJsonMetadata`: The `json_metadata` string is not valid JSON.
 - `InvalidMetadata`: The JSON parsed but failed validation against the template (missing required field, wrong shape for a field, etc.).
 - `MintError(text)`: Underlying mint call to the collection canister failed.
+
+{% hint style="warning" %}
+Over REST the whole request body is capped at about **2 MB**, which is less than 50 items of 50 KiB. A batch above that is rejected by the gateway before it reaches the canister, as a plain `413` with no JSON error body. Keep a batch under ~2 MB in total: 50 items of 40 KiB, or 40 items of 50 KiB.
+{% endhint %}
 
 ---
 
