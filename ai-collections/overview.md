@@ -27,6 +27,10 @@ Use an AI collection when you want to mint certificates without designing a temp
 Use a [standard collection](../minting-studio/getting-started.md) when you want your own branding, your own template, template validation, and control over who can mint.
 
 {% hint style="info" %}
+If the caller is an AI agent rather than your own code, the [MCP server](../mcp-server/overview.md) wraps this whole path as tools the agent can call, with spend caps on top. Collections it creates are AI collections, so everything on this page applies to them.
+{% endhint %}
+
+{% hint style="info" %}
 The two paths do not mix. `initialize_mint` refuses AI collections, and `agent_initialize_mint` cannot target a standard one. Choose per collection.
 {% endhint %}
 

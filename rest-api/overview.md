@@ -125,16 +125,16 @@ Write endpoints return a consistent JSON body:
 
 Read endpoints return a plain-text message with the status code rather than a JSON envelope.
 
-## Two ways in
+## Ways in
 
-The REST API is one of two supported integration paths, and they reach the same canisters.
+The REST API is one of three supported integration paths, and they all reach the same canisters.
 
-| | REST API | Direct canister |
-| --- | -------- | --------------- |
-| Auth | API key | Your IC identity |
-| Client | Any HTTP client | `dfx` or an agent library |
-| Paying | Approve once in the dashboard | Approve with `icrc2_approve` |
-| Best for | Backend services, existing stacks | On-chain integrations, full control |
+| | REST API | Direct canister | [MCP server](../mcp-server/overview.md) |
+| --- | -------- | --------------- | ----------- |
+| Auth | API key | Your IC identity | The agent's own identity |
+| Client | Any HTTP client | `dfx` or an agent library | An AI agent host |
+| Paying | Approve once in the dashboard | Approve with `icrc2_approve` | Per-call approve, capped |
+| Best for | Backend services, existing stacks | On-chain integrations, full control | Agentic workflows |
 
 You can move between them freely. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
 

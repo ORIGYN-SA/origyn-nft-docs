@@ -25,6 +25,12 @@
 
 * [Overview](ai-collections/overview.md)
 
+## MCP Server
+
+* [Overview](mcp-server/overview.md)
+* [Tool Reference](mcp-server/tools.md)
+* [Agent Memory](mcp-server/agent-memory.md)
+
 ## Custom Installation
 
 * [Setup & Deployment](custom-installation/setup.md)
