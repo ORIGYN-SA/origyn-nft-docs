@@ -90,7 +90,12 @@ A **managed service** where ORIGYN handles all the infrastructure. Ideal for:
 
 **Cost:** 15,000 OGY tokens per collection. ORIGYN manages cycles (gas), upgrades, and infrastructure.
 
-[Get started with Minting Studio →](../minting-studio/getting-started.md)
+There are two ways to drive it, and they reach the same canisters:
+
+* **REST API** with an API key. No Internet Computer tooling needed, so it drops into an existing backend. [REST API Overview →](../rest-api/overview.md)
+* **Direct canister calls** with `dfx` and your own identity. [Get started with Minting Studio →](../minting-studio/getting-started.md)
+
+You are not locked into either. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
 
 ### Custom Installation
 

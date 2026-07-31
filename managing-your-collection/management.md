@@ -22,11 +22,17 @@ If you created your collection via the **Minting Studio**, permissions are **aut
 
 **Managed by the Minting Studio canister (not user-accessible):**
 
-| Permission       | What the canister handles                                                           |
-| ---------------- | ----------------------------------------------------------------------------------- |
-| `Minting`        | Creating new certificates. done via the [Minting API](../minting-studio/minting.md) |
-| `UpdateUploads`  | Uploading files. done via the proxy upload endpoints                                |
-| `UpdateMetadata` | Updating individual token metadata                                                  |
+| Permission                 | What the canister handles                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `Minting`                  | Creating new certificates, via the [Minting API](../minting-studio/minting.md)       |
+| `UpdateUploads`            | Uploading files, via the proxy upload endpoints                                       |
+| `UpdateMetadata`           | Updating individual token metadata                                                    |
+| `UpdateCollectionMetadata` | Editing collection-level metadata on your behalf                                      |
+| `ManageAuthorities`        | Adding and removing permissions on the collection, without a code upgrade             |
+
+{% hint style="info" %}
+`ManageAuthorities` is worth understanding: it means the Minting Studio canister can change the permission set on a collection it created. That is what allows permissions to be repaired or extended without redeploying, and it is part of what you accept by using the managed service rather than a [Custom Installation](../custom-installation/setup.md).
+{% endhint %}
 
 This means you **do not** need to call `grant_permission` or `revoke_permission` on Minting Studio collections. All minting and upload operations go through the Minting Studio API, which forwards them to your collection canister with the correct permissions.
 
