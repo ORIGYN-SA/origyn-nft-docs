@@ -25,6 +25,22 @@ For most users, the Template Builder is all you need. The sections below cover t
 
 ---
 
+## Templates and Certificate Types
+
+A collection declares a `certificate_type` when it is created (`"standard"` or `"dpp"`, see
+[Collections & Certificates](collections-and-certificates.md)), and that choice determines the
+structure the template should have and how the certificate is rendered.
+
+{% hint style="warning" %}
+**Nothing cross-checks the pairing.** Templates are not themselves typed: `create_template` takes
+raw JSON, and creating a collection with `certificate_type = "dpp"` does not verify that
+`template_id` points at a DPP-shaped template. Pairing the right template with the right certificate
+type is yours to get right.
+{% endhint %}
+
+Certificates are still validated against whatever template the collection references at mint time,
+so a mismatched pairing surfaces as mint-time validation errors, not at collection creation.
+
 ## Template JSON Structure
 
 A template is stored as a JSON string. At the top level:

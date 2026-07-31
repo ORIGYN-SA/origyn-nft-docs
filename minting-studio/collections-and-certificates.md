@@ -61,7 +61,8 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(r
   name = "My Gold Bar Collection";
   description = "Certified gold bar certificates with full provenance tracking";
   symbol = "GBC";
-  template_id = 1
+  template_id = 1;
+  certificate_type = opt "standard"
 })'
 ```
 
@@ -76,8 +77,55 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(r
 | `description` | text     | Description of the collection                                                                                      |
 | `symbol`      | text     | Short symbol (e.g., "GBC")                                                                                         |
 | `template_id` | nat      | ID of a previously registered template                                                                             |
+| `certificate_type` | opt text | Which kind of certificate this collection issues: `"standard"` (the default) or `"dpp"`. Case-insensitive. Pass `null` for standard. **Cannot be changed after creation.** |
 
 The collection creation process typically completes in under a minute. Monitor progress with `get_collection_info`.
+
+***
+
+### Certificate Types
+
+Every collection issues one kind of certificate, chosen when the collection is created:
+
+| Value        | Meaning                                                                       |
+| ------------ | ----------------------------------------------------------------------------- |
+| `"standard"` | The certificates the Minting Studio has always issued. This is the default.   |
+| `"dpp"`      | A **Digital Product Passport**.                                               |
+
+The type determines the structure of the template the collection uses and how its certificates are
+rendered. Choose it at creation with the `certificate_type` field; omit it and you get `"standard"`.
+
+**It cannot be changed afterwards.** `update_collection_metadata` does not accept it. To change
+type, create a new collection.
+
+Every collection created before certificate types existed reports `"standard"`, so an existing
+integration sees no change.
+
+{% hint style="info" %}
+`certificate_type` is a different axis from whether a collection is AI-created. A collection has
+both: an AI collection issues `"standard"` certificates unless it says otherwise. See
+[REST API Overview](../rest-api/overview.md) for how the two filters differ.
+{% endhint %}
+
+Every collection-shaped and NFT-shaped read endpoint accepts a `certificate_type` filter. On the
+canister, `list_all_collections`, `get_collections_by_owner` and `get_collections_for_user` take
+`certificate_type : opt vec text`:
+
+```bash
+# Only DPP collections
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai list_all_collections '(record {
+  pagination = record { offset = null; limit = null };
+  categories = null;
+  certificate_type = opt vec { "dpp" }
+})'
+```
+
+Passing `null` (or an empty vector) returns every type. A name this canister does not recognise
+returns an empty page rather than an error, so you can filter on a certificate type before it ships.
+
+**Adding a new certificate type never breaks your integration.** The value travels as `text` in both
+directions rather than as a Candid variant, precisely so that a third type can be introduced without
+invalidating bindings you generated from an older `can.did`.
 
 ***
 
