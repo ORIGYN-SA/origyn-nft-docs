@@ -204,6 +204,12 @@ All commands below use the Minting Studio canister ID `uasjq-dyaaa-aaaas-qdwka-c
 
 ### Register a Template
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/create_template" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(record {
   template_json = "<your_template_json_string>"
@@ -218,6 +224,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(rec
 - `JsonError` The JSON string is malformed.
 
 ### Get a Template by ID
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/templates/{template_id}" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_template_by_id '(record {
@@ -239,6 +251,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_template_ids_by_o
 
 ### List Your Templates (with JSON)
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/owners/{principal}/templates" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_templates_by_owner '(record {
   owner = principal "<your_principal>";
@@ -250,6 +268,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_templates_by_owne
 
 ### Update a Template
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/update_template" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_template '(record {
   template_id = 1;
@@ -260,6 +284,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_template '(rec
 **Note:** Only the template owner can update their templates.
 
 ### Delete a Template
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/delete_template" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai delete_template '(1)'
