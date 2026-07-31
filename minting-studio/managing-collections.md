@@ -8,6 +8,13 @@ Operations you perform on a collection after it exists: editing its display meta
 
 Each is shown both ways. Pick whichever track you are integrating with; they do the same thing.
 
+{% hint style="info" %}
+**`certificate_type` is not editable.** A collection's certificate type (`"standard"` or `"dpp"`) is
+fixed when the collection is created; `update_collection_metadata` does not accept it. To change
+type, create a new collection. See
+[Collections & Certificates](collections-and-certificates.md#certificate-types).
+{% endhint %}
+
 ## Editing collection metadata
 
 Change a collection's name, description, symbol, logo, or categories at any time. Every field is optional; omitted fields are left alone.

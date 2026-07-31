@@ -21,6 +21,35 @@ There are two families of endpoint underneath it, and they behave differently.
 
 The read API is entirely public. The write API needs a bearer key; see [Obtaining an API Key](api-keys.md).
 
+## Filtering by collection type
+
+Two filters look similar and are easy to confuse. They select on different things, and you can use
+either, both, or neither:
+
+| Filter             | Values                                              | Selects by                                    |
+| ------------------ | --------------------------------------------------- | --------------------------------------------- |
+| `collection_type`  | `ai`, `normal`                                      | **how the collection was created**            |
+| `certificate_type` | `standard`, `dpp` (comma-separate for several)      | **what kind of certificate it issues**        |
+
+Omit either one to get everything. `certificate_type` accepts a comma-separated list, so
+`?certificate_type=standard,dpp` is the same as omitting it today.
+
+```bash
+# Every DPP collection
+curl "https://gateway.origyn.com/v1/nft/production/collections?certificate_type=dpp"
+
+# DPP certificates held by one account
+curl "https://gateway.origyn.com/v1/nft/production/accounts/$PRINCIPAL/nfts?certificate_type=dpp"
+```
+
+Two things worth knowing:
+
+- Collections created before certificate types existed report `standard`, so nothing you already
+  query changes shape or disappears.
+- An unrecognised value returns an **empty page, not an error**. That is deliberate: it means you
+  can start filtering on a certificate type before it has shipped, and a new type never turns your
+  working request into a `400`.
+
 ## Authentication
 
 Writes take an API key as a bearer token:

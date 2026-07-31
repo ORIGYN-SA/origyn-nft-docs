@@ -10,6 +10,22 @@ Every read endpoint, live. These need no API key, so you can call any of them ri
 The `env` field is prefilled with `production`. Leave it as it is.
 {% endhint %}
 
+{% hint style="info" %}
+**Filtering by certificate type.** These endpoints accept `?certificate_type=standard`,
+`?certificate_type=dpp`, or a comma-separated list; omit it for all types:
+
+`GET /collections`, `GET /nfts`, `GET /search`, `GET /accounts/{principal}/nfts`,
+`GET /accounts/{principal}/past-nfts`, `GET /accounts/{principal}/collections`,
+`GET /owners/{principal}/nfts`, `GET /owners/{principal}/collections`, `GET /transactions`.
+
+An unrecognised value returns an empty page rather than an error. This is a different axis from
+`collection_type=ai|normal`; see [Overview](overview.md#filtering-by-collection-type).
+
+On the write side, `POST /create_collection` takes an optional `certificate_type` in the body
+(`"standard"` by default, or `"dpp"`); an invalid value returns `400 unknown_certificate_type`.
+The choice is immutable once the collection exists.
+{% endhint %}
+
 ## Collections
 
 ### `GET /collections`
