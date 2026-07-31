@@ -97,6 +97,8 @@ The JSON envelope is the same as for standard collections: display keys at the t
 
 The difference is that it is not validated against a template. The JSON must still parse and stay within the per-item size cap, but no field is required and no shape is enforced.
 
+`agent_mint_nfts` accepts the same optional `public_content` as `mint_json_nfts`, and like it will accept either the bare upload name or the namespaced form. See [Attaching uploaded files](../minting-studio/minting.md#attaching-uploaded-files-public_content).
+
 Refunds work the same way, via `agent_request_mint_refund`.
 
 ## Attaching files after minting
@@ -116,6 +118,12 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai append_file '(record 
 ```
 
 Each entry maps a name to the path of a file you have already uploaded and finalized. Standard collections can only attach files at mint time.
+
+{% hint style="warning" %}
+Unlike the mint endpoints, `append_file` needs the **stored** path, the session-namespaced `{mint_request_id}/{name}` form, not the bare name you gave `init_upload`. Its arguments carry no `mint_request_id`, so it cannot work the namespaced form out for you. Take the exact value from `get_collection_files`, or from `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
+
+A path that does not match returns `UnauthorizedFile { file_path }`.
+{% endhint %}
 
 {% hint style="warning" %}
 `append_file` has **no REST equivalent** today. If you are integrating over HTTP, this is the one operation you cannot perform without calling the canister directly.
