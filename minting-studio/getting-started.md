@@ -6,6 +6,12 @@ icon: bolt
 
 This guide walks you through launching an ORIGYN NFT collection using the Minting Studio. It is a managed service where ORIGYN handles the infrastructure. If you prefer full control over your smart contracts, see [Custom Installation](../custom-installation/setup.md) instead.
 
+{% hint style="info" %}
+**There are two ways to do everything on this page.** This guide uses `dfx`, which talks to the canister directly with your own Internet Computer identity.
+
+If you would rather work over plain HTTP with an API key and no IC tooling, start with the [REST API Overview](../rest-api/overview.md). Both paths reach the same canisters and produce identical collections.
+{% endhint %}
+
 ### Prerequisites
 
 Before beginning, you must have the Internet Computer SDK (dfx) installed and a developer identity configured.
@@ -34,6 +40,12 @@ You must first define the structure of your NFTs by registering a JSON template.
 
 Once you have your template JSON, register it:
 
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/create_template" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(record {
  template_json = "<your_template_json_here>"
@@ -46,9 +58,11 @@ Note the template_id returned by this command (e.g., 1), as you will need it sho
 
 Authorize the Minting Studio to spend the required fee from your wallet. The OGY Ledger ID is `lkwrt-vyaaa-aaaaq-aadhq-cai`.
 
+OGY has 8 decimals, so 15,000 OGY is `1_500_000_000_000` e8s. ICRC-2 also debits the ledger transfer fee (`200_000` e8s) from the allowance, so approve `1_500_000_200_000`.
+
 ```bash
 dfx canister --network ic call lkwrt-vyaaa-aaaaq-aadhq-cai icrc2_approve '(record {
-  amount = 15000000000;
+  amount = 1_500_000_200_000;
   spender = record { owner = principal "uasjq-dyaaa-aaaas-qdwka-cai"; }
 })'
 ```
@@ -57,16 +71,37 @@ dfx canister --network ic call lkwrt-vyaaa-aaaaq-aadhq-cai icrc2_approve '(recor
 
 Submit the final request to spin up your NFT canister. Replace `template_id = 1` with the actual ID you received in Step 3.
 
+{% hint style="danger" %}
+**This spends 15,000 OGY.** Test it sends a real production request. Fill in `Idempotency-Key` deliberately.
+{% endhint %}
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/create_collection" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(record {
+  categories = vec {};
   name = "My Unique Collection";
   description = "A collection of rare digital artifacts.";
   symbol = "MUC";
-  template_id = 1;
+  template_id = 1
 })'
 ```
 
-This command returns a `collection_id`. You can monitor the installation progress (which typically takes under a minute) by querying `get_collection_info` with this ID. Look for the status `TemplateUploaded` to confirm success. If the status is `Failed`, the protocol automatically reimburses the 15,000 OGY fee.
+Any category name you pass must already exist in the global taxonomy, otherwise the call fails with `UnknownCategory` before any OGY is charged. Read the current list with `list_categories`.
+
+{% hint style="info" %}
+Over `dfx`, `categories` is **required** and must be present even when empty (`vec {}`). Over REST it is optional and may be omitted entirely.
+{% endhint %}
+
+This command returns a `collection_id`. Monitor the installation, which typically completes in under a minute, by querying `get_collection_info` with this ID. Look for the status `TemplateUploaded` to confirm success.
+
+{% hint style="warning" %}
+A `Failed` status does **not** mean your fee has been refunded. Creation is retried automatically roughly once a minute, and a reimbursement is only requested once the retry limit is exhausted. See [Collection Lifecycle](collections-and-certificates.md#collection-lifecycle).
+{% endhint %}
 
 ---
 
@@ -77,3 +112,4 @@ Your collection is now live. Here's what to do next:
 - **[Templates](templates.md)** Learn more about template structure, field types, and the visual builder
 - **[Collections & Certificates](collections-and-certificates.md)** Understand the collection lifecycle and how to query certificates
 - **[Minting](minting.md)** Mint certificates into your collection with the full API flow
+- **[Managing Collections](managing-collections.md)** Edit metadata, set a logo, and settle mint requests

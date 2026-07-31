@@ -75,10 +75,18 @@ Mint with specific metadata:
   mint \
   --owner "RECEIVER_PRINCIPAL" \
   --name "My CLI NFT" \
+  --metadata "name:My CLI NFT" \
   --metadata "description:Created via CLI" \
-  --metadata "image:https://$NFT_CANISTER_ID.raw.icp0.io/image.png" \
   --metadata "rarity:Legendary"
 ```
+
+{% hint style="warning" %}
+Two things about this command catch people out.
+
+**`--name` does not become metadata.** It is required by the CLI but its value is discarded, so a token minted without a `name` metadata entry ends up unnamed. Pass the name twice, as shown above.
+
+**`--metadata` splits on the first `:`.** A value containing a colon is truncated at it, so `--metadata "image:https://example.com/i.png"` stores just `https`. Set URL-valued fields with the ICRC-97 flag below, or upload the file and reference it from the metadata JSON.
+{% endhint %}
 
 Mint using a hosted JSON file (ICRC-97 URL):
 
@@ -122,5 +130,5 @@ Grant Minting Rights:
 ### Troubleshooting
 
 * **"UploadNotInitialized"**: If an upload fails midway, the canister might lose the init state. Run `init_upload` (or the CLI upload command) again.
-* **"ConcurrentManagementCall"**: The canister prevents multiple management calls (like updates or mints) happening in the exact same block/batch to protect state. Retry the command.
+* **"ConcurrentManagementCall"**: The canister allows only **one management call in flight at a time, across all callers**. If anyone else's mint, metadata update, permission change, or upload chunk is executing, your call is rejected. Retry the command. The lock is held per call and released when it returns, so a chunked upload does not block others for its whole duration, only for each individual chunk.
 * **Permission Denied**: Ensure the identity in `$IDENTITY_FILE` matches the controller or a principal with ManageAuthorities.

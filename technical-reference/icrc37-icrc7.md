@@ -133,17 +133,33 @@ Purpose: Allows third parties (marketplaces, games) to transfer tokens on your b
 
 #### Common Commands
 
+Both approval calls nest their details inside a required `approval_info` sub-record. Note that `created_at_time` is a **required** `nat64` (an epoch timestamp in nanoseconds), not a nullable field:
+
+```candid
+type ApprovalInfo = record {
+  memo : opt blob;
+  from_subaccount : opt blob;
+  created_at_time : nat64;
+  expires_at : opt nat64;
+  spender : Account;
+};
+type ApproveTokenArg      = record { token_id : nat; approval_info : ApprovalInfo };
+type ApproveCollectionArg = record { approval_info : ApprovalInfo };
+```
+
 Approve Spender (Specific Token)
 
 ```bash
 dfx canister call $NFT_CANISTER_ID icrc37_approve_tokens "(vec {
   record {
-    token_id = 42;
-    spender = record { owner = principal \"SPENDER_PRINCIPAL\"; subaccount = null };
-    memo = null;
-    expires_at = null;
-    created_at_time = null;
-    from_subaccount = null;
+    token_id = 42 : nat;
+    approval_info = record {
+      spender = record { owner = principal \"SPENDER_PRINCIPAL\"; subaccount = null };
+      from_subaccount = null;
+      expires_at = null;
+      memo = null;
+      created_at_time = 1700000000000000000 : nat64;
+    };
   }
 })" --network ic
 ```
@@ -153,16 +169,20 @@ Approve Spender (Entire Collection)
 ```bash
 dfx canister call $NFT_CANISTER_ID icrc37_approve_collection "(vec {
   record {
-    spender = record { owner = principal \"MARKETPLACE_PRINCIPAL\"; subaccount = null };
-    memo = null;
-    expires_at = null;
-    created_at_time = null;
-    from_subaccount = null;
+    approval_info = record {
+      spender = record { owner = principal \"MARKETPLACE_PRINCIPAL\"; subaccount = null };
+      from_subaccount = null;
+      expires_at = null;
+      memo = null;
+      created_at_time = 1700000000000000000 : nat64;
+    };
   }
 })" --network ic
 ```
 
 Revoke Approval
+
+_Unlike the approve calls above, the revoke arguments are **flat** (there is no `approval_info` wrapper) and `created_at_time` is optional here._
 
 _To revoke, pass `opt` wrapped spender details. To revoke all, pass `null`._
 

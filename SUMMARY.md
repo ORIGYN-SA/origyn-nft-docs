@@ -12,6 +12,18 @@
 * [Templates](minting-studio/templates.md)
 * [Collections & Certificates](minting-studio/collections-and-certificates.md)
 * [Minting](minting-studio/minting.md)
+* [Managing Collections](minting-studio/managing-collections.md)
+
+## REST API
+
+* [Overview](rest-api/overview.md)
+* [Obtaining an API Key](rest-api/api-keys.md)
+* [Paid Requests & Idempotency](rest-api/paid-requests.md)
+* [Endpoint Reference](rest-api/reference.md)
+
+## AI Collections
+
+* [Overview](ai-collections/overview.md)
 
 ## Custom Installation
 
