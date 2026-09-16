@@ -12,8 +12,11 @@ Minting is the process of creating certificates (ORIGYN NFTs) within a collectio
 ### Prerequisites
 
 - A collection in **TemplateUploaded** status (see [Collections & Certificates](collections-and-certificates.md))
-- OGY tokens in your wallet for minting fees
+- The **Owner**, **Admin** or **Minter** role in the collection's [organization](organizations.md)
+- An OGY allowance approved by the organization's **billing principal**, which pays the minting fees
 - Certificate data ready (text fields, images, documents)
+
+Mint requests are shared within the organization: any member with minting rights can upload to, mint from, close or refund a request a colleague opened.
 
 Unless noted otherwise, the `dfx` commands below use the Minting Studio canister ID `uasjq-dyaaa-aaaas-qdwka-cai`. The one exception is `burn_nft`, which is called on the collection canister directly.
 
@@ -83,13 +86,13 @@ Over REST, `total_file_size_bytes` is a **decimal string**, not a number.
 
 **Returns:** `mint_request_id` (nat64). Save this, you will need it for all subsequent steps.
 
-This call will transfer OGY tokens from your wallet to cover the minting fee. Ensure you have approved the Minting Studio canister to spend from your OGY balance (via `icrc2_approve` as shown in [Getting Started](getting-started.md)).
+This call transfers OGY from the organization's **billing principal** to cover the minting fee, so the billing principal must have approved the Minting Studio canister to spend from its OGY balance (via `icrc2_approve` as shown in [Getting Started](getting-started.md)).
 
 **Errors:**
 
 - `CollectionNotReady`: The collection is not in TemplateUploaded status.
-- `CallerNotCollectionOwner`: You are not the owner of this collection.
-- `TransferFromError`: Insufficient OGY balance or approval.
+- `CallerNotCollectionOwner`: You are not a member of the collection's organization with minting rights, or the organization is suspended. Over REST this is `403 not_owner`.
+- `TransferFromError`: Insufficient OGY balance or approval on the billing principal.
 
 {% hint style="info" %}
 `num_mints = 0` is valid. It opens a **storage-only session**, which is how you reserve upload capacity without reserving any mints.
@@ -114,14 +117,16 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_init_upload '(r
   mint_request_id = <your_mint_request_id> : nat64;
   file_path = "certificate_image.png";
   file_size = 500000 : nat64;
-  file_hash = "<sha256_hash_of_file>";
+  file_hash = opt "<sha256_hex_of_file>";
   chunk_size = null
 })'
 ```
 
+`file_hash` is optional. When given, the collection checks the SHA-256 of the assembled file at finalize; pass `null` to skip that check. Over REST, `file_hash` is required.
+
 #### B. Store Chunks
 
-For files larger than 2 MB, split them into chunks. Each chunk is uploaded separately:
+A chunk can be at most **1 MiB** (1,048,576 bytes), which is also the default `chunk_size`. Split any larger file into chunks and upload each separately. A single file can be at most **100 MiB**.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/store_chunk" method="post" %}
 https://gateway.origyn.com/openapi.json
@@ -163,10 +168,18 @@ https://<collection_canister_id>.raw.icp0.io/<mint_request_id>/certificate_image
 
 Keep this returned URL. It is the value you put in `path` when you reference the file from your mint JSON.
 
+{% hint style="info" %}
+Files are served by the collection's storage canister. A request to the URL above redirects (`307`) to `https://<storage_canister_id>.raw.icp0.io/...`, so make sure your HTTP client follows redirects. Large files are streamed, `Range: bytes=start-end` requests are answered with `206` (at most 2 MiB per response), and responses are cacheable for a year.
+{% endhint %}
+
+{% hint style="info" %}
+Private files (encrypted, visible only to authorized readers) use separate upload endpoints. See [Minting Private Content](../private-content/minting.md).
+{% endhint %}
+
 **Errors:**
 
 - `ByteLimitExceeded`: Total uploaded bytes exceed the `total_file_size_bytes` specified in the mint request.
-- `Unauthorized`: You are not the owner of this mint request.
+- `Unauthorized`: You have no minting rights in the collection's organization, or it is suspended.
 
 {% hint style="warning" %}
 **Only re-send a chunk that returned an error.** Uploaded bytes are counted per successful `store_chunk` call, not per `chunk_id`, so re-sending a chunk that already succeeded counts its bytes twice against the storage you paid for at `initialize_mint`.
@@ -224,8 +237,8 @@ This is separate from the file references inside `data`. `public_content` attach
 **Errors (`MintJsonNftsError`):**
 
 - `MintRequestNotFound`: No mint request exists for the given ID.
-- `Unauthorized`: You are not the owner of this mint request.
-- `UnauthorizedFile { file_path }`: A `public_content` entry names a file you have not uploaded to this collection. Over REST this is `403 file_not_uploaded` and the message names the path. Check it against `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
+- `Unauthorized`: You have no minting rights in the collection's organization, or it is suspended.
+- `UnauthorizedFile { file_path }`: A `public_content` entry names a file that was not uploaded to this collection. Over REST this is `403 file_not_uploaded` and the message names the path. Check it against `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
 - `MintRequestNotActive`: The mint request has been refunded or is no longer active.
 - `MintLimitExceeded { allowed, already_minted, requested }`: This batch would exceed the request's `num_mints` cap.
 - `NoItemsProvided`: The `mint_items` vector is empty.
@@ -261,6 +274,11 @@ The `json_metadata` you pass to `mint_json_nfts` is a JSON object with a fixed o
 
 The top-level keys drive how the certificate is displayed. Everything declared in your template belongs under `data`, keyed by field `id`.
 
+Two top-level keys are reserved:
+
+* **`template`** records the [template version](templates.md#how-a-certificate-pins-its-version) the certificate is validated against. Leave it out and the Minting Studio adds the current version for you.
+* **`private`** holds a certificate's encrypted [private content](../private-content/overview.md). Only the gateway writes it: a `json_metadata` that contains its own `private` key is refused with `InvalidMetadata`. Private fields never go under `data`.
+
 ### Value shapes inside `data`
 
 Each field takes one of exactly three shapes.
@@ -285,7 +303,8 @@ Validation is deliberately lenient, which is worth knowing so you are not surpri
 
 * Extra keys the template does not declare are **ignored**, not rejected.
 * Unknown field types in the template do not cause an error.
-* The **only** failure mode is a field marked `required: true` (and not `immutable: true`) that has no non-empty value. That returns `InvalidMetadata`.
+* The only failure modes are a field marked `required: true` (and not `immutable: true`) that has no non-empty value, a `template` pin that names another template or a version that does not exist, and a top-level `private` key. Each returns `InvalidMetadata`.
+* Fields marked `private: true` are skipped here; the gateway checks them when you mint [private content](../private-content/minting.md#validation-rules).
 
 So a payload can be accepted and still render incompletely. Treat the template as the contract and check your output in the viewer.
 
@@ -351,6 +370,11 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(<y
 | `allocated_bytes` | Total bytes allocated                      |
 | `uploaded_files`  | List of uploaded files with paths and URLs |
 | `ogy_charged`     | OGY tokens charged for this request        |
+| `owner`           | The member who opened the request          |
+
+{% hint style="info" %}
+`GET /mint_requests` lists only the requests **you** opened. To see every request in your organization, call `get_mint_requests_by_org` on the canister.
+{% endhint %}
 
 **Mint Request Statuses:**
 
@@ -376,7 +400,7 @@ There are two ways to end a mint request, and picking the wrong one is the most 
 
 ### `close_mint_request` (the usual one)
 
-Settles a request you have used. The OGY you consumed is burned, and the unused portion of **both** reservations is refunded: capacity you did not mint, and storage you did not upload.
+Settles a request you have used. The OGY you consumed is burned, and the unused portion of **both** reservations is refunded to the organization's billing principal: capacity you did not mint, and storage you did not upload. It works even while the organization is suspended.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/close_mint_request" method="post" %}
 https://gateway.origyn.com/openapi.json

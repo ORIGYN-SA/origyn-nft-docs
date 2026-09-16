@@ -35,7 +35,20 @@ Upload a file:
 
 Result: This returns a URL (e.g., `https://...raw.icp0.io/...`) which you should save for minting.
 
-* Options: Add `--chunk_size 2000000` to adjust upload speeds.
+* Options: `--chunk_size <bytes>` (or `-s`) sets the chunk size. The default, `1048576` (1 MiB), is also the **maximum**. A larger value is rejected by the storage canister, and the failed attempt still costs the collection cycles because it spawns a new storage canister first.
+* A single file can be at most **100 MiB**.
+
+Upload a JSON metadata file (for example one produced by `create-metadata`):
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  upload-metadata ./metadata.json
+```
+
+It accepts the same `--chunk_size` option.
 
 ### 2. Batch Metadata Creation & Validation
 
@@ -124,6 +137,32 @@ Grant Minting Rights:
   --canister $NFT_CANISTER_ID \
   permissions grant --principal "TARGET_PRINCIPAL" --permission "minting"
 ```
+
+Revoke a permission:
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  permissions revoke --principal "TARGET_PRINCIPAL" --permission "minting"
+```
+
+Check a single permission:
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  permissions has --principal "TARGET_PRINCIPAL" --permission "minting"
+```
+
+Permission names: `minting`, `manage_authorities`, `update_metadata`, `update_collection_metadata`, `read_uploads`, `update_uploads`.
+
+{% hint style="info" %}
+`--network` defaults to `local`. Always pass `--network ic` for a mainnet collection.
+{% endhint %}
 
 ***
 

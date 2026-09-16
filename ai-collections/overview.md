@@ -10,15 +10,17 @@ They differ from standard collections in three ways that matter:
 
 | | Standard collection | AI collection |
 | --- | ------------------- | ------------- |
-| Who can create one | Authorized principals only | Any signed-in principal |
+| Who can create one | Owners and Admins of an [organization](../minting-studio/organizations.md) | Any signed-in principal |
 | Template | Yours, registered in advance | A shared built-in template |
 | Metadata validation | Validated against your template | **Not validated** |
+| Owned by | Your organization | Your principal |
+| [Private content](../private-content/overview.md) | Supported | **Not supported** |
 
 {% hint style="warning" %}
 Certificates minted this way are **not checked against a template**. Your JSON must still parse and stay within the per-item size cap, but no field is required and no shape is enforced, so a missing or misshapen field is stored exactly as sent. Validate your metadata yourself; the usual safety net is not there.
 {% endhint %}
 
-You still pay the normal OGY fees. That cost is what keeps the open-to-anyone path from being abused.
+You still pay the normal OGY fees, from your own wallet rather than an organization's billing principal. That cost is what keeps the open-to-anyone path from being abused.
 
 ## When to use this
 

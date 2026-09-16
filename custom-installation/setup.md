@@ -45,17 +45,11 @@ The deployment assets live in the `example/` directory, not at the repository ro
 cd example
 ```
 
-#### Option A: Automated script
+{% hint style="warning" %}
+**Use the manual command below, not `deploy_collection.sh`.** The script in `example/` (and the deploy command in `example/README.md`) omits the required `vetkd_key_name` and `vetkd_context` fields, so it currently fails to encode its install argument. It also deploys with `--mode reinstall`, which wipes all state on the target canister.
+{% endhint %}
 
-```bash
-./deploy_collection.sh
-```
-
-The script checks prerequisites, prompts for your configuration, writes `canister_ids.json`, deploys, and builds the CLI tool.
-
-> **This script is intended for testing.** It deploys with `--mode reinstall`, which **wipes all existing state** on the target canister, and it prompts for a canister you have already created. Do not run it against a live collection.
-
-#### Option B: Manual deployment
+#### Manual deployment
 
 ```bash
 dfx deploy --network ic nft --argument '(
@@ -98,6 +92,7 @@ dfx deploy --network ic nft --argument '(
       max_canister_storage_threshold = null;
       permitted_drift = null;
       atomic_batch_transfers = null;
+      storage_cycles = null;
     }
   }
 )'
@@ -107,7 +102,51 @@ dfx deploy --network ic nft --argument '(
 
 > **Do not set `test_mode = true` in production.** In test mode the canister grants all six permissions to the installing principal on top of whatever `permissions` you pass, which hides a misconfigured `permissions` record until the day you turn test mode off.
 
-For the full walkthrough, including uploading files and minting, see [`example/README.md`](https://github.com/ORIGYN-SA/nft/blob/master/example/README.md) in the repository.
+### Storage canister cycles
+
+Your collection stores files in storage canisters it creates and funds itself, from its own cycles balance. `storage_cycles` tunes that. Leave it `null` for the defaults, or set any of its fields (each is optional):
+
+```candid
+storage_cycles = opt record {
+  initial_cycles        = opt (2_000_000_000_000 : nat);  // cycles a new storage canister starts with
+  reserved_cycles_limit = null;                            // reserved cycles cap of a storage canister
+  funding_interval_secs = null;                            // how often storage canisters are checked
+  funding_min_cycles    = null;                            // top up a storage canister below this balance
+  funding_fund_cycles   = null;                            // how much each top-up sends
+};
+```
+
+| Field | Default |
+| ----- | ------- |
+| `initial_cycles` | 2 TC |
+| `reserved_cycles_limit` | 2 TC |
+| `funding_interval_secs` | 3600 (hourly) |
+| `funding_min_cycles` | 1 TC |
+| `funding_fund_cycles` | 2 TC |
+
+A new storage canister is created whenever the current one fills up (500 GiB each), and its starting cycles come out of the collection's balance, so keep the collection funded.
+
+On an upgrade, pass `storage_cycles` inside the `Upgrade` record to change the settings; `null` keeps the ones already stored.
+
+### Upgrading an existing collection
+
+A collection upgrades its own storage canisters automatically, on a timer that starts right after the collection's upgrade. That step logs failures and does not retry them, so check it before sending uploads:
+
+1. Read the collection's logs and confirm there is no `Storage canister upgrade failed` entry.
+2. Confirm every storage canister's module hash equals the SHA-256 of `wasm/storage_canister.wasm.gz` from the build you installed:
+
+   ```bash
+   shasum -a 256 wasm/storage_canister.wasm.gz
+   dfx canister --network ic info <storage_canister_id>   # Module hash: 0x...
+   ```
+
+If either check fails, run the collection upgrade again; it retries every storage canister still behind.
+
+{% hint style="danger" %}
+**Do not upload until both checks pass.** A storage canister left on an older version rejects the new upload arguments, and the collection reads that rejection as "this canister is full": it creates, and pays for, a new storage canister on every upload.
+{% endhint %}
+
+The ORIGYN NFT canister is open source under the Apache 2.0 license.
 
 ***
 

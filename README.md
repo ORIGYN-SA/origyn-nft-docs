@@ -5,6 +5,12 @@ metaLinks: {}
 
 # ORIGYN NFT
 
+{% hint style="success" %}
+**We recommend the Minting Studio with an API key and the HTTP endpoints.** It needs no Internet Computer tooling, drops into any backend, and is **currently the only way to use private content**: certificate fields and files that are encrypted on chain and readable only by the people you choose.
+
+Start here: [Getting Started](minting-studio/getting-started.md) → [Obtaining an API Key](rest-api/api-keys.md) → [REST API Overview](rest-api/overview.md). See [Private Content](private-content/overview.md) for what private content can do.
+{% endhint %}
+
 ### The ORIGYN NFT Standard
 
 The ORIGYN NFT is fundamentally different from the NFTs you might know from Ethereum (like ERC-721). It is not just a token; it is a programmable container for data.

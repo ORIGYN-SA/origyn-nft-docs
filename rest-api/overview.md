@@ -4,7 +4,11 @@ icon: cloud
 
 # REST API Overview
 
-Everything the Minting Studio does is available over plain HTTP. You can create collections, upload files, mint certificates, and query the index without writing any Internet Computer code.
+Everything the Minting Studio does is available over plain HTTP. You can create collections, upload files, mint certificates, manage your organization, and query the index without writing any Internet Computer code.
+
+{% hint style="success" %}
+**This is the recommended way to integrate.** It is also currently the only way to use [private content](../private-content/overview.md): private uploads, private fields, reader groups and decrypted reads exist only on these endpoints.
+{% endhint %}
 
 ## Base URL
 
@@ -16,10 +20,10 @@ There are two families of endpoint underneath it, and they behave differently.
 
 | Family | Path prefix | Auth | What it does |
 | ------ | ----------- | ---- | ------------ |
-| **Reads** | `/v1/nft/production/` | none | Query collections, certificates, holders, transactions, search |
-| **Writes** | `/gateway/v1/nft/production/` | API key | Create collections and templates, upload files, mint, settle |
+| **Public reads** | `/v1/nft/production/` | none | Query collections, certificates, holders, organizations, templates, transactions, search |
+| **Gateway** | `/gateway/v1/nft/production/` | API key or session token | Create collections and templates, upload files, mint, settle, manage your organization and reader groups, read private content |
 
-The read API is entirely public. The write API needs a bearer key; see [Obtaining an API Key](api-keys.md).
+The public read API needs no credential. The gateway needs a bearer credential; see [Obtaining an API Key](api-keys.md).
 
 ## Filtering by collection type
 
@@ -38,6 +42,9 @@ Omit either one to get everything. `certificate_type` accepts a comma-separated 
 # Every DPP collection
 curl "https://gateway.origyn.com/v1/nft/production/collections?certificate_type=dpp"
 
+# Every collection of one organization
+curl "https://gateway.origyn.com/v1/nft/production/collections?org_id=12"
+
 # DPP certificates held by one account
 curl "https://gateway.origyn.com/v1/nft/production/accounts/$PRINCIPAL/nfts?certificate_type=dpp"
 ```
@@ -52,14 +59,25 @@ Two things worth knowing:
 
 ## Authentication
 
-Writes take an API key as a bearer token:
+Gateway endpoints take a bearer credential, either an API key or a session token:
 
 ```bash
 curl https://gateway.origyn.com/gateway/v1/nft/production/collections \
   -H "Authorization: Bearer $ORIGYN_API_KEY"
 ```
 
-Your key identifies you on every request. There is no way to act on behalf of another principal: the identity comes from the key alone and is never read from a URL, body, or header.
+Your credential identifies you on every request. There is no way to act on behalf of another principal: the identity comes from the credential alone and is never read from a URL, body, or header.
+
+| Credential | Looks like | Lifetime | Get it from |
+| ---------- | ---------- | -------- | ----------- |
+| API key | `sk_live_` + 32 hex characters | Until revoked | The dashboard, or `POST /keys` |
+| Session token | a JWT | At most 24 hours | `POST /auth/session` |
+
+Both are accepted by every gateway endpoint. See [Obtaining an API Key](api-keys.md).
+
+{% hint style="info" %}
+Writes also need your principal's on-chain authorization of the gateway, which you sign when you create a key. Without it, writes fail with `403 not_delegable` or `403 not_authorized` while reads keep working. See [Withdrawing the gateway's authorization](api-keys.md#withdrawing-the-gateways-authorization).
+{% endhint %}
 
 Reads need no authentication at all. Try one now:
 
@@ -136,27 +154,33 @@ The canister API uses **nanoseconds**. If you are porting from `dfx` calls, divi
 
 ### Errors
 
-Write endpoints return a consistent JSON body:
+Gateway endpoints return a consistent error body:
 
 ```json
 { "error": "insufficient_allowance", "message": "approve more OGY to claimlink" }
 ```
 
+Branch on the `error` code. The body is JSON, but it is sent with `Content-Type: text/plain`, so parse the body rather than relying on the header.
+
 | Status | Meaning | Common codes |
 | ------ | ------- | ------------ |
-| `400` | Malformed request | `missing_idempotency_key`, `invalid_id`, `invalid_metadata`, `unknown_category` |
-| `401` | Bad or revoked key | `unauthorized` |
+| `400` | Malformed request | `missing_idempotency_key`, `invalid_id`, `invalid_metadata`, `unknown_category`, `invalid_org_id`, `reserved_path` |
+| `401` | Missing, bad, revoked or expired credential | `unauthorized` |
 | `402` | Not enough OGY | `insufficient_allowance`, `insufficient_funds` |
-| `403` | Not permitted | `not_owner`, `not_delegable`, `not_authorized`, `file_not_uploaded` |
+| `403` | Not permitted | `not_owner`, `not_permitted`, `insufficient_role`, `not_a_member`, `org_suspended`, `org_mismatch`, `not_delegable`, `not_authorized`, `no_delegation`, `file_not_uploaded` |
 | `404` | No such thing | `not_found` |
-| `409` | Conflict | `idempotency_key_conflict`, `concurrent_request`, `collection_not_ready`, `mint_limit_exceeded` |
+| `409` | Conflict | `idempotency_key_conflict`, `concurrent_request`, `collection_not_ready`, `mint_limit_exceeded`, `template_in_use`, `template_limit_exceeded`, `too_many_template_versions` |
 | `413` | Body too large | plain-text, no JSON envelope (see the batch-size note in [Minting](../minting-studio/minting.md#step-4-mint-certificates)) |
-| `502` | Upstream unavailable | `upstream_unavailable` |
+| `429` | Rate limited | `rate_limited` |
+| `500` | Internal error | `internal` |
+| `502` | Upstream unavailable | `upstream_unavailable`, `canister_unavailable`, `key_unavailable` |
 
-Read endpoints return a plain-text message with the status code rather than a JSON envelope.
+Public read endpoints return a plain-text message with the status code rather than a JSON envelope.
 
 {% hint style="info" %}
-`GET /allowance` reports your standing ICRC-2 **approval** to the Minting Studio, not your OGY **balance**. A paid call can still fail with `402 insufficient_funds` while that endpoint shows a large number: the approval is a ceiling, the balance is what is actually spendable. There is no pre-flight balance check over REST.
+`GET /allowance` reports a standing ICRC-2 **approval** to the Minting Studio, not an OGY **balance**. A paid call can still fail with `402 insufficient_funds` while that endpoint shows a large number: the approval is a ceiling, the balance is what is actually spendable. There is no pre-flight balance check over REST.
+
+It also reports **whose** approval depends on the credential: an organization-bound key reports the organization's billing principal, while any other key or session reports your own. Charges always come from the billing principal, so `GET /orgs/{org_id}/allowance` is the one to check before paying.
 {% endhint %}
 
 ## Two ways in
@@ -167,8 +191,9 @@ The REST API is one of two supported integration paths, and they reach the same 
 | --- | -------- | --------------- |
 | Auth | API key | Your IC identity |
 | Client | Any HTTP client | `dfx` or an agent library |
-| Paying | Approve once in the dashboard | Approve with `icrc2_approve` |
-| Best for | Backend services, existing stacks | On-chain integrations, full control |
+| Paying | Billing principal approves once (the dashboard does it during key creation) | Billing principal approves with `icrc2_approve` |
+| Private content | Yes | No |
+| Best for | Backend services, existing stacks, private content | On-chain integrations |
 
 You can move between them freely. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
 
@@ -180,9 +205,13 @@ Some Internet Computer signing is unavoidable either way: the OGY spending appro
 
 There is no rate limiting on the read API today. Please be considerate with automated polling; index data is refreshed continuously, so aggressive polling gains you very little.
 
+A few gateway actions are rate limited: sending organization invitations (200 per organization per day) and email verification (5 verification emails per hour). They answer `429 rate_limited`.
+
 Fresh certificates take a few seconds to reach the index after minting. If you need a certificate the instant it is minted, read it live with `GET /collections/{canister_id}/nfts/{token_id}`, which goes straight to the collection canister. `GET /v1/nft/production/sync-status` reports how current the index is.
 
 ## Next steps
 
 * [Obtaining an API Key](api-keys.md)
 * [Paid Requests & Idempotency](paid-requests.md)
+* [Organizations & Members](../minting-studio/organizations.md)
+* [Private Content](../private-content/overview.md)

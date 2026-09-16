@@ -9,10 +9,18 @@
 ## Minting Studio
 
 * [Getting Started](minting-studio/getting-started.md)
+* [Organizations & Members](minting-studio/organizations.md)
 * [Templates](minting-studio/templates.md)
 * [Collections & Certificates](minting-studio/collections-and-certificates.md)
 * [Minting](minting-studio/minting.md)
 * [Managing Collections](minting-studio/managing-collections.md)
+
+## Private Content
+
+* [Overview](private-content/overview.md)
+* [Reader Groups](private-content/reader-groups.md)
+* [Minting Private Content](private-content/minting.md)
+* [Reading Private Content](private-content/reading.md)
 
 ## REST API
 

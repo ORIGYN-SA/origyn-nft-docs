@@ -8,6 +8,8 @@ Operations you perform on a collection after it exists: editing its display meta
 
 Each is shown both ways. Pick whichever track you are integrating with; they do the same thing.
 
+Editing metadata, categories and the logo takes the **Owner**, **Admin** or **Minter** role in the collection's [organization](organizations.md). Settling mint requests takes the same roles and also works while the organization is suspended; everything else on this page is refused for a suspended organization.
+
 {% hint style="info" %}
 **`certificate_type` is not editable.** A collection's certificate type (`"standard"` or `"dpp"`) is
 fixed when the collection is created; `update_collection_metadata` does not accept it. To change
@@ -129,7 +131,7 @@ https://gateway.origyn.com/openapi.json
 What settlement does, precisely:
 
 * The OGY corresponding to what you actually minted and uploaded is **burned**.
-* The unused portion of **both** reservations is refunded: certificates you did not mint, and storage you did not fill.
+* The unused portion of **both** reservations is refunded to the organization's billing principal: certificates you did not mint, and storage you did not fill.
 * The refund is reduced by the ledger transfer fee. Amounts at or below that fee are burned instead of paid out.
 
 {% hint style="info" %}

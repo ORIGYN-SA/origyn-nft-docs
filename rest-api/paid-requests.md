@@ -13,6 +13,8 @@ Two endpoints in the REST API spend your OGY:
 
 Both require an **`Idempotency-Key`** header. A request without one is rejected before anything is charged.
 
+Both charge your organization's **billing principal**, not the member who makes the call. The billing principal must have approved the Minting Studio to spend OGY; see [Paying: the billing principal](../minting-studio/organizations.md#paying-the-billing-principal).
+
 ## Why this is gated
 
 The header is a deliberate safety gate, and it does two jobs.
@@ -98,11 +100,11 @@ The key is scored against the **payer plus a fingerprint of the full request bod
 
 | Situation | Result |
 | --------- | ------ |
-| No `Idempotency-Key` header | `400` `missing_idempotency_key` — nothing is charged |
+| No `Idempotency-Key` header | `400` `missing_idempotency_key`. Nothing is charged |
 | First use of a key | The request runs and you are charged once |
 | Same key, **same** body | The original result is replayed. You are **not** charged again |
-| Same key, **different** body | `409` `idempotency_key_conflict` — nothing is charged |
-| Same key, first call still running | `409` `concurrent_request` — wait, then retry |
+| Same key, **different** body | `409` `idempotency_key_conflict`. Nothing is charged |
+| Same key, first call still running | `409` `concurrent_request`. Wait, then retry |
 
 So: **reuse the key to retry, change the key to make a new purchase.**
 
@@ -126,7 +128,8 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_collect
         "symbol": "GBC",
         "description": "Certified gold bar certificates",
         "template_id": 1,
-        "categories": []
+        "categories": [],
+        "org_id": 12
       }'
 ```
 
@@ -139,6 +142,10 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_collect
 | `name`, `symbol`, `description` | string | Required |
 | `template_id` | integer | Required. A template you own |
 | `categories` | string[] | Optional over HTTP. Each name must already exist in the taxonomy |
+| `org_id` | integer | Optional. The organization that will own the collection. Omitted: your key's organization if it is bound to one, otherwise the organization you own. Required in practice if you are a member of an organization you do not own |
+| `certificate_type` | string | Optional. `"standard"` (default) or `"dpp"`. Cannot be changed later |
+
+Only an Owner or Admin can create collections, and the template must belong to the same organization. A refusal is `403 not_permitted`, or `403 org_suspended` for a suspended organization.
 
 {% hint style="info" %}
 `categories` is optional here, unlike the direct canister call, where it is a required field and must be sent as `vec {}` even when empty.
@@ -193,6 +200,9 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/initialize_min
 | `collection_canister_id` | string | The collection's NFT canister principal |
 | `num_mints` | integer | Certificates to reserve. `0` opens an upload-only session |
 | `total_file_size_bytes` | **string** | Total bytes you will upload, as a decimal string |
+| `private_file_sizes` | integer[] | Optional. Plaintext sizes of the private files you will upload, so the reservation covers encryption. See [Minting Private Content](../private-content/minting.md#1-reserve-room-for-encryption) |
+
+Any Owner, Admin or Minter of the collection's organization can open a mint request.
 
 {% hint style="warning" %}
 `total_file_size_bytes` is a **string**, not a number, and it is a hard cap you have paid for. Uploads that exceed it are rejected. Size it generously; the unused portion is refunded when you close the request, minus the ledger transfer fee. A residual smaller than that fee cannot be sent and is burned instead.

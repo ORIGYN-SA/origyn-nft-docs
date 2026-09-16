@@ -11,7 +11,7 @@ This guide covers managing your ORIGYN NFT collection after deployment using dfx
 
 ## Minting Studio Permissions
 
-If you created your collection via the **Minting Studio**, permissions are **automatically configured**, you do not need to manage them yourself. The Minting Studio canister acts as a trusted intermediary and handles minting, file uploads, and metadata updates on your behalf.
+If you created your collection via the **Minting Studio**, permissions are **automatically configured**, you do not need to manage them yourself. Who in your organization may do what is decided by their [organization role](../minting-studio/organizations.md#roles), not by collection permissions. The Minting Studio canister acts as a trusted intermediary and handles minting, file uploads, and metadata updates on your behalf.
 
 **Your permissions as a Minting Studio collection owner:**
 
@@ -102,7 +102,7 @@ dfx canister call $NFT_CANISTER_ID revoke_permission "(record {
 
 > **Minting Studio users:** Use the [proxy upload endpoints](../minting-studio/minting.md) instead. Direct file uploads require the `UpdateUploads` permission, which is held by the Minting Studio canister.
 
-Uploading large files via dfx manually requires splitting files into chunks. For files under 2 MB, you can often do it in one go.
+Uploading via dfx means sending the file in chunks of at most **1 MiB** (1,048,576 bytes). A file of 1 MiB or less fits in a single chunk. A single file can be at most **100 MiB**.
 
 Step A: Initialize Upload
 
@@ -110,10 +110,21 @@ Step A: Initialize Upload
 dfx canister call $NFT_CANISTER_ID init_upload "(record {
   file_path = \"my_image.png\";
   file_size = 1000 : nat64;
-  file_hash = \"sha256_hash_of_file\";
+  file_hash = opt \"<sha256_hex_of_file>\";
   chunk_size = null;
 })" --network ic
 ```
+
+* `file_hash` is optional. When given, finalize checks the SHA-256 of the assembled file and fails with `FileHashMismatch` if it differs. Pass `null` to skip that check; only completeness is then verified.
+* `chunk_size` defaults to 1 MiB, which is also the maximum. A larger value fails, and the attempt costs the collection cycles because it spawns a new storage canister first.
+
+{% hint style="warning" %}
+Collections built from the repository before mid-September 2026 take `file_hash` as a plain string (`file_hash = \"...\"`), and reject `opt`. Check which one yours expects:
+
+```bash
+dfx canister --network ic metadata $NFT_CANISTER_ID candid:service | grep file_hash
+```
+{% endhint %}
 
 Step B: Store Chunk
 
@@ -129,7 +140,7 @@ dfx canister call $NFT_CANISTER_ID store_chunk "(record {
 
 Step C: Finalize Upload
 
-Returns the public URL of the file.
+Finalize needs every chunk: `ceil(file_size / chunk_size)` of them, adding up to exactly `file_size`. It returns the public URL of the file.
 
 ```bash
 dfx canister call $NFT_CANISTER_ID finalize_upload "(record {
