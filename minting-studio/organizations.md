@@ -197,7 +197,7 @@ Removal stops on-chain permissions immediately. Access to private content stops 
 
 ### Transferring ownership
 
-The Owner can hand the organization to another **active** member with `{ "new_owner": "<principal>" }`. The Owner role, the billing principal and the default certificate recipient all move to the new Owner, and the previous Owner becomes an Admin. The new Owner must not already own an organization.
+The Owner can hand the organization to another **active** member with `{ "new_owner": "<principal>" }`. The Owner role and the billing principal move to the new Owner, and the previous Owner becomes an Admin. The new Owner must not already own an organization.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/orgs/{org_id}/transfer" method="post" %}
 https://gateway.origyn.com/openapi.json
