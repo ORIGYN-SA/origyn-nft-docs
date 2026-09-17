@@ -78,7 +78,7 @@ Collection fees and mint fees are charged to the organization's **billing princi
 
 * The billing principal defaults to the Owner.
 * Only the Owner can change it, and it does not need to be a member.
-* It must hold OGY and approve the Minting Studio to spend it (`icrc2_approve` on the OGY ledger, see [Getting Started](getting-started.md#4-approve-fee-payment)). A member's own approval does not pay for the organization.
+* It must hold OGY and approve the Minting Studio to spend it (`icrc2_approve` on the OGY ledger, see [Getting Started](getting-started.md#3-prepare-your-environment)). A member's own approval does not pay for the organization.
 
 When the approval runs short, paid calls fail with `402 insufficient_allowance`. Check the organization's standing approval:
 
