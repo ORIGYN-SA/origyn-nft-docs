@@ -116,7 +116,7 @@ If the billing principal is the Owner's dashboard wallet, approve there instead:
 
 ### 4. Create a template
 
-A template defines the structure of your certificates. The easiest way to build one is the [Visual Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/), a drag-and-drop tool that generates the JSON for you. See [Templates](templates.md) for the full structure and field types.
+A template defines the structure of your certificates. The easiest way to build one is the [Visual Template Builder](https://arturshirokov.github.io/claimlink-template-builder/), a drag-and-drop tool that generates the JSON for you. See [Templates](templates.md) for the full structure and field types.
 
 Register the template JSON. `template_json` is the template as a **string**:
 

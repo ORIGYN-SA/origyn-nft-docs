@@ -11,7 +11,7 @@ Templates define the structure, layout, and field types of your certificates (OR
 
 ## Visual Template Builder (Recommended)
 
-> **The fastest and easiest way to create templates** is the [Minting Studio Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/). It provides a visual drag-and-drop interface for designing templates, previewing them in real-time, and downloading the ready-to-use JSON file. This approach eliminates manual JSON editing, reduces errors significantly, and is the recommended starting point for all users.
+> **The fastest and easiest way to create templates** is the [Minting Studio Template Builder](https://arturshirokov.github.io/claimlink-template-builder/). It provides a visual drag-and-drop interface for designing templates, previewing them in real-time, and downloading the ready-to-use JSON file. This approach eliminates manual JSON editing, reduces errors significantly, and is the recommended starting point for all users.
 
 With the Template Builder you can:
 
@@ -70,7 +70,7 @@ A template is stored as a JSON string. At the top level:
 
 ### Sections
 
-Templates are organized into sections. Templates support up to **5 sections** in total. The two standard sections are:
+Templates are organized into sections. There is no limit on the number of sections, and each can be renamed. The two standard sections are:
 
 - **Certificate** The visual certificate tab. Contains the fields displayed prominently on the certificate.
 - **Information** The detailed data tab. Contains additional metadata and supporting information.
