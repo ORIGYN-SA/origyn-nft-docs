@@ -115,7 +115,7 @@ A **managed service** where ORIGYN handles all the infrastructure. Ideal for:
 There are two ways to drive it, and they reach the same canisters:
 
 * **REST API** with an API key **(recommended)**. No Internet Computer tooling needed, so it drops into an existing backend, and it is **currently the only way to use [private content](../private-content/overview.md)**. [REST API Overview →](../rest-api/overview.md)
-* **Direct canister calls** with `dfx` and your own identity. Everything except private content. [Get started with Minting Studio →](../minting-studio/getting-started.md)
+* **Direct canister calls** with `dfx` and your own identity. Everything except writing and reading private content. [Get started with Minting Studio →](../minting-studio/getting-started.md)
 
 You are not locked into either. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
 

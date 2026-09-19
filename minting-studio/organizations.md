@@ -322,4 +322,4 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai accept_invite '(recor
 | Billing | `set_billing_principal` |
 | Resources | `get_collections_by_org`, `get_templates_by_org` (at most 2 per call), `get_template_ids_by_org`, `get_mint_requests_by_org` |
 
-Email invitations are available over HTTP only.
+Email invitations are sent by the gateway, so `POST /orgs/{org_id}/invites` is the practical way to send one. The slots behind them (`create_invite_slot`, `claim_invite_slot`) are on the canister, but you would have to generate and hash the secret and deliver the link yourself.

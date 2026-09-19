@@ -5,7 +5,7 @@ icon: users-rectangle
 # Reader Groups
 
 {% hint style="warning" %}
-**Private content works only through the HTTP API for now.** Reader groups only matter for private content, so manage them through the endpoints on this page with your [API key](../rest-api/api-keys.md).
+**Private content works only through the HTTP API for now.** Reader groups exist to unlock private content, so this page shows the HTTP endpoints, called with your [API key](../rest-api/api-keys.md). The same group actions also exist on the canister for `dfx` users, but the content they unlock is readable only over HTTP.
 {% endhint %}
 
 A reader group is a named list of principals inside an [organization](../minting-studio/organizations.md). Name the group in a template item's `readers`, and every member of the group can read that item on every certificate of the organization's collections. See [Private Content](overview.md#marking-fields-private) for how templates reference groups.
@@ -31,7 +31,7 @@ A suspended organization cannot change its groups.
 | ----- | ----- |
 | Groups per organization | 32 |
 | Members per group | 256 |
-| `group_id` | 1 to 32 characters of `a-z`, `0-9` and `-`. `owner` and `members` are reserved. |
+| `group_id` | 1 to 32 characters of `a-z`, `0-9` and `-`. `owner` and `members` cannot be used. |
 | `name` | 1 to 64 bytes |
 
 `group_id` is what templates and certificates refer to, and it cannot be changed. `name` is a display label.
@@ -57,6 +57,8 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/orgs/12/groups
   }
 }
 ```
+
+Answers `201` with the created group.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/orgs/{org_id}/groups" method="post" %}
 https://gateway.origyn.com/openapi.json

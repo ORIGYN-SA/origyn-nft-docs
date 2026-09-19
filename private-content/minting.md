@@ -29,7 +29,8 @@ Encryption makes every private file slightly larger: 16 bytes per 1,048,560-byte
 * List those same plaintext sizes in `private_file_sizes`.
 
 ```bash
-curl "https://gateway.origyn.com/gateway/v1/nft/production/estimate?num_mints=1&total_bytes=3355443&private_file_sizes=3355443"
+curl "https://gateway.origyn.com/gateway/v1/nft/production/estimate?num_mints=1&total_bytes=3355443&private_file_sizes=3355443" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY"
 ```
 
 The estimate answers with an extra `encryption_overhead_bytes`.

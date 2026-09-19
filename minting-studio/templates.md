@@ -212,7 +212,7 @@ Templates support custom backgrounds for the certificate view:
 | `type: "standard"` | Uses the default ORIGYN certificate background |
 | `type: "custom"`   | Uses a custom image or video as background     |
 
-**Size limit:** Background images should be under **800 KB**. The total template JSON must stay under **1.5 MB** to fit within the Internet Computer's 2 MB ingress message limit.
+**Size guidance:** nothing rejects a large template, but the whole call has to fit in the Internet Computer's 2 MB ingress message. Keep background images under **800 KB** and the template JSON under **1.5 MB**; above that the call fails at the network layer rather than with a clean error.
 
 ---
 
@@ -410,8 +410,8 @@ Deleting removes every version. A template that a collection still uses cannot b
 
 | Limit               | Value        | Reason                                        |
 | ------------------- | ------------ | --------------------------------------------- |
-| Max template JSON   | 1.5 MB       | Fits within the IC 2 MB ingress message limit |
-| Background images   | ~800 KB      | Keeps template size manageable                |
+| Max template JSON   | ~1.5 MB      | Guidance, not enforced: the call must fit the IC 2 MB ingress message |
+| Background images   | ~800 KB      | Guidance, not enforced: keeps the template inside that limit |
 | Templates per organization | Configurable | Enforced by the Minting Studio canister  |
 | Versions per template | 10         | Versions are never deleted                    |
 | Pagination limit    | 2 per query  | Avoids exceeding the 3 MB IC response limit   |

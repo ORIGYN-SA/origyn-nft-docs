@@ -83,7 +83,7 @@ Grant a permission:
 ```bash
 dfx canister call $NFT_CANISTER_ID grant_permission "(record {
   permission = variant { Minting };
-  principal = principal \"YOUR_TARGET_PRINCIPAL_HERE\"
+  \"principal\" = principal \"YOUR_TARGET_PRINCIPAL_HERE\"
 })" --network ic
 ```
 
@@ -92,7 +92,7 @@ Revoke a permission:
 ```bash
 dfx canister call $NFT_CANISTER_ID revoke_permission "(record {
   permission = variant { Minting };
-  principal = principal \"YOUR_TARGET_PRINCIPAL_HERE\"
+  \"principal\" = principal \"YOUR_TARGET_PRINCIPAL_HERE\"
 })" --network ic
 ```
 

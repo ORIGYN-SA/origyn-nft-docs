@@ -65,7 +65,7 @@ A template item becomes private with `"private": true`. Its `readers` list says 
 | --- | ------- |
 | `private` | `true` makes the item private. Omitted or `false` means public. |
 | `required` | As for any item: the certificate cannot be minted without a value. For a private item the value goes in the private part. |
-| `readers[].group` | The id of a [reader group](reader-groups.md) in the organization, or `owner` for whoever currently holds the certificate. |
+| `readers[].group` | The id of a [reader group](reader-groups.md) in the organization, or the built-in `owner`, meaning whoever currently holds the certificate. `owner` is the only built-in name. |
 | `readers[].from_version` | Optional. The grant applies only to certificates pinned to this [template version](../minting-studio/templates.md#template-versions) or later. Omit it to grant access on every certificate. |
 
 `from_version` is how you widen access for new certificates without widening it for the ones already issued.
@@ -96,7 +96,7 @@ The certificate's public JSON gains a `private` block holding only ciphertext:
 }
 ```
 
-Public reads (the `/v1/nft/` HTTP endpoints, `get_nft`, ICRC-7 metadata) return this block as it is stored. Private files live in the collection at `https://<collection_canister_id>.raw.icp0.io/<mint_request_id>/p/<id>`. That address is public, but the bytes behind it are encrypted, and the real file name is part of the private data.
+Public reads (the `/v1/nft/` HTTP endpoints, `get_nft`, ICRC-7 metadata) return this block as it is stored. Private files live in the collection at `https://<collection_canister_id>.raw.icp0.io/<mint_request_id>/p/<hex>`. That address is public, but the bytes behind it are encrypted, and the real file name is part of the private data.
 
 ## Revoking access
 

@@ -98,7 +98,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_pending_invites '
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai accept_invite '(record { org_id = <org_id> : nat64 })'
 ```
 
-Because this identity does not **own** the organization, pass `org_id = opt <org_id>` whenever a call takes `org_id`.
+Because this identity does not **own** the organization, name the organization when you create templates and collections: `org_id = opt <org_id>`. Watch the two spellings: `create_template` and `create_collection` take `org_id` as an optional field (`opt`), while every other organization call takes it plain, for example `record { org_id = 12 : nat64 }`.
 
 **3. Approve the fee payment** from the billing principal. OGY has 8 decimals, so 15,000 OGY is `1_500_000_000_000` e8s, and ICRC-2 also debits the ledger transfer fee (`200_000` e8s) from the allowance:
 

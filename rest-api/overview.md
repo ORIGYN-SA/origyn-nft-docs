@@ -7,7 +7,7 @@ icon: cloud
 Everything the Minting Studio does is available over plain HTTP. You can create collections, upload files, mint certificates, manage your organization, and query the index without writing any Internet Computer code.
 
 {% hint style="success" %}
-**This is the recommended way to integrate.** It is also currently the only way to use [private content](../private-content/overview.md): private uploads, private fields, reader groups and decrypted reads exist only on these endpoints.
+**This is the recommended way to integrate.** It is also the only way to use [private content](../private-content/overview.md): private values can only be written and read here. (Reader groups can also be managed with `dfx`, but the content they unlock cannot.)
 {% endhint %}
 
 ## Base URL

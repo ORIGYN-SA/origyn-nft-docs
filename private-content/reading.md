@@ -21,7 +21,7 @@ All under `https://gateway.origyn.com/gateway/v1/nft/production/`, all requiring
 | `GET /owners/{principal}/nfts` | Certificates a principal minted or holds |
 | `GET /orgs/{org_id}/nfts` | Certificates an organization issued |
 
-Each returns certificates in the usual shape. The certificate JSON is under `metadata`, and its `private` block (`metadata.private`) is rewritten for you. Every certificate on these endpoints carries the key, `null` when it has no private content.
+Each returns certificates in the usual shape. The certificate JSON is under `metadata`, and its `private` block (`metadata.private`) is rewritten for you. Every certificate on these endpoints has a `private` field, which is `null` when it has no private content.
 
 `GET /orgs/{org_id}/nfts` accepts the organization's id or its slug. None of these endpoints require membership: anyone with a credential can list them, and only the private content is decided per caller.
 

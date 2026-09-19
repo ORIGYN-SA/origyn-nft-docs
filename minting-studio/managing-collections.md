@@ -100,7 +100,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_logo_finalize_u
 
 
 {% hint style="warning" %}
-**Maximum logo size is 5 MB.** The HTTP endpoint accepts a larger request body, but the canister rejects anything above 5 MB, so a bigger file fails after the upload rather than before it.
+**Maximum logo size is 5 MiB** (5,242,880 bytes). The HTTP endpoint accepts a larger request body, up to 25 MiB, but the canister rejects anything above 5 MiB, so a bigger file fails after the upload rather than before it.
 {% endhint %}
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/upload_logo/{collection_canister_id}" method="post" %}
