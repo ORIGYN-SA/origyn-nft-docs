@@ -4,7 +4,7 @@ icon: rectangle-terminal
 
 # CLI Management
 
-Target Audience: Users who cloned the repo, built the `origyn_icrc7_cmdlinetools` binary, and have full terminal access. For DFX-based management (applicable to both Minting Studio and Custom Installation), see [Management](../managing-your-collection/management.md).
+This page is for people who cloned the repository, built the `origyn_icrc7_cmdlinetools` binary and work from a terminal. For managing a collection with dfx, which applies to both Minting Studio and Custom Installation collections, see [Management](../managing-your-collection/management.md).
 
 ### Environment Setup
 
@@ -35,7 +35,20 @@ Upload a file:
 
 Result: This returns a URL (e.g., `https://...raw.icp0.io/...`) which you should save for minting.
 
-* Options: Add `--chunk_size 2000000` to adjust upload speeds.
+* Options: `--chunk_size <bytes>` (or `-s`) sets the chunk size. The default, `1048576` (1 MiB), is also the **maximum**. A larger value is rejected by the storage canister, and the failed attempt still costs the collection cycles because it spawns a new storage canister first.
+* A single file can be at most **100 MiB**.
+
+Upload a JSON metadata file (for example one produced by `create-metadata`):
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  upload-metadata ./metadata.json
+```
+
+It accepts the same `--chunk_size` option.
 
 ### 2. Batch Metadata Creation & Validation
 
@@ -80,13 +93,11 @@ Mint with specific metadata:
   --metadata "rarity:Legendary"
 ```
 
-{% hint style="warning" %}
 Two things about this command catch people out.
 
 **`--name` does not become metadata.** It is required by the CLI but its value is discarded, so a token minted without a `name` metadata entry ends up unnamed. Pass the name twice, as shown above.
 
 **`--metadata` splits on the first `:`.** A value containing a colon is truncated at it, so `--metadata "image:https://example.com/i.png"` stores just `https`. Set URL-valued fields with the ICRC-97 flag below, or upload the file and reference it from the metadata JSON.
-{% endhint %}
 
 Mint using a hosted JSON file (ICRC-97 URL):
 
@@ -124,6 +135,30 @@ Grant Minting Rights:
   --canister $NFT_CANISTER_ID \
   permissions grant --principal "TARGET_PRINCIPAL" --permission "minting"
 ```
+
+Revoke a permission:
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  permissions revoke --principal "TARGET_PRINCIPAL" --permission "minting"
+```
+
+Check a single permission:
+
+```bash
+./origyn_icrc7_cmdlinetools \
+  --network ic \
+  --identity $IDENTITY_FILE \
+  --canister $NFT_CANISTER_ID \
+  permissions has --principal "TARGET_PRINCIPAL" --permission "minting"
+```
+
+Permission names: `minting`, `manage_authorities`, `update_metadata`, `update_collection_metadata`, `read_uploads`, `update_uploads`.
+
+`--network` defaults to `local`. Always pass `--network ic` for a mainnet collection.
 
 ***
 

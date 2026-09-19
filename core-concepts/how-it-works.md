@@ -10,6 +10,16 @@ Before diving into technical setup, here is a high-level overview of how ORIGYN 
 
 ## Core Concepts
 
+### Organizations
+
+An **organization** is the account that issues certificates. It owns the templates and collections, and its **members** work in it with a role:
+
+* **Owner** and **Admin** manage templates, collections and the team
+* **Minter** mints certificates
+* **Viewer** reads everything, including private content
+
+The organization pays for collections and mints from one wallet, its **billing principal**. You get an organization by applying in the Minting Studio dashboard, or join one by invitation. [Organizations & Members →](../minting-studio/organizations.md)
+
 ### Templates
 
 A **template** is the blueprint for your certificates. It defines:
@@ -18,6 +28,9 @@ A **template** is the blueprint for your certificates. It defines:
 * What **data types** each field accepts (text, number, date, image, video, document)
 * How the certificate is **visually laid out** (sections, backgrounds, multi-column layouts)
 * Which **languages** are supported for multi-language certificates
+* Which fields are **private**, and who may read them
+
+Every change to a template is saved as a new **version**, and each certificate remembers the version it was minted with.
 
 Think of a template as a form design, it specifies the structure, but contains no actual data yet. You create a template once, then use it to mint as many certificates as you need.
 
@@ -44,6 +57,7 @@ A **certificate** is an individual ORIGYN NFT within a collection. Each certific
 * Is **fully on-chain** that means all the data, images, and documents stored on the Internet Computer
 * Follows the **ICRC-7 standard** making them transferable, queryable, and interoperable with any IC marketplace
 * Has an **owner** who can transfer or manage it
+* Can carry **private content**: fields and files encrypted on chain that only chosen readers can see
 
 Certificates represent verified real-world assets like gold bars, diamonds, watches, and art while including the ORIGYN badge guaranteeing authenticity.
 
@@ -52,26 +66,34 @@ Certificates represent verified real-world assets like gold bars, diamonds, watc
 ## The Complete Flow
 
 ```
+0. Get Access
+   └─ Apply in the Minting Studio dashboard, or accept an invitation
+   └─ Your organization is created on approval
+   └─ Create an API key (recommended)
+
 1. Design a Template
    └─ Use the Visual Template Builder or write JSON manually
    └─ Define fields, sections, languages, and background
+   └─ Mark fields private and choose their readers (optional)
    └─ Register the template → receive a template_id
 
 2. Create a Collection
    └─ Choose your template
    └─ Provide a name, symbol, and description
-   └─ Pay the creation fee (15,000 OGY via Minting Studio)
+   └─ Pay the creation fee (15,000 OGY, from the organization's billing principal)
    └─ Collection canister is automatically deployed
 
 3. Mint Certificates
    └─ Upload files (images, documents) to the collection
+   └─ Upload private files through the private upload endpoints (optional)
    └─ Provide JSON metadata for each certificate (validated server-side against the template)
    └─ Certificates become live ORIGYN NFTs with unique token IDs
 
 4. View & Manage
    └─ Query certificate details and metadata
+   └─ Read private content with your credential
    └─ Transfer certificates between owners
-   └─ Manage collection permissions
+   └─ Manage your team, reader groups and billing
 ```
 
 ***
@@ -88,14 +110,9 @@ A **managed service** where ORIGYN handles all the infrastructure. Ideal for:
 * Projects that don't need custom smart contract logic
 * Quick launches, new collections are ready in under a minute
 
-**Cost:** 15,000 OGY tokens per collection. ORIGYN manages cycles (gas), upgrades, and infrastructure.
+**Cost:** 15,000 OGY per collection, plus a fee per certificate and its storage. ORIGYN pays the cycles, upgrades and infrastructure. See [Pricing](pricing.md).
 
-There are two ways to drive it, and they reach the same canisters:
-
-* **REST API** with an API key. No Internet Computer tooling needed, so it drops into an existing backend. [REST API Overview →](../rest-api/overview.md)
-* **Direct canister calls** with `dfx` and your own identity. [Get started with Minting Studio →](../minting-studio/getting-started.md)
-
-You are not locked into either. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
+You can drive it over HTTP with an API key, or by calling the canisters directly with `dfx`. Both reach the same canisters, and you can mix them; only private content is HTTP-only. [Getting Started](../minting-studio/getting-started.md) compares the two and sets you up.
 
 ### Custom Installation
 
@@ -105,6 +122,6 @@ A **self-managed** deployment using the open-source ORIGYN NFT canister. Ideal f
 * Projects requiring custom logic or deep integration
 * Teams comfortable managing their own canisters and cycles
 
-**Cost:** You manage your own cycles. No OGY fee, but you are responsible for all infrastructure.
+**Cost:** no OGY fees. You fund the canister's cycles and run the infrastructure.
 
 [Get started with Custom Installation →](../custom-installation/setup.md)

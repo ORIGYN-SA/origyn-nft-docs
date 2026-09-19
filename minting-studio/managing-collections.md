@@ -4,23 +4,33 @@ icon: sliders
 
 # Managing Collections
 
-Operations you perform on a collection after it exists: editing its display metadata, setting its logo, and settling mint requests.
+What you can change after a collection exists: its display metadata, its categories and its logo.
 
-Each is shown both ways. Pick whichever track you are integrating with; they do the same thing.
+Editing takes the Owner, Admin or Minter role in the collection's [organization](organizations.md), and is refused while the organization is suspended.
 
-{% hint style="info" %}
-**`certificate_type` is not editable.** A collection's certificate type (`"standard"` or `"dpp"`) is
-fixed when the collection is created; `update_collection_metadata` does not accept it. To change
-type, create a new collection. See
-[Collections & Certificates](collections-and-certificates.md#certificate-types).
-{% endhint %}
+Two things are fixed at creation and cannot be changed: the collection's **template** and its **certificate type** (`standard` or `dpp`). To change either, create a new collection.
+
+The HTTP examples use the same shell variables as [Minting](minting.md): `$API`, `$ORIGYN_API_KEY` and `$COLLECTION`.
 
 ## Editing collection metadata
 
-Change a collection's name, description, symbol, logo, or categories at any time. Every field is optional; omitted fields are left alone.
+Change the name, description, symbol, logo or categories at any time. Every field except the collection id is optional, and what you leave out stays as it is.
 
-**Using dfx instead**
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl -X POST "$API/update_collection_metadata" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+        \"collection_canister_id\": \"$COLLECTION\",
+        \"name\": \"My Renamed Collection\",
+        \"description\": \"An updated description\"
+      }"
+```
+{% endtab %}
 
+{% tab title="dfx" %}
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_collection_metadata '(record {
   collection_canister_id = principal "<collection_canister_id>";
@@ -33,13 +43,10 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_collection_met
 ```
 
 Pass `null` for anything you are not changing.
+{% endtab %}
+{% endtabs %}
 
-
-{% hint style="warning" %}
-Category names are validated against the global taxonomy **before** anything is written. An unknown name fails the whole call with `UnknownCategory` (`unknown_category` over REST) and changes nothing else.
-
-Passing `categories` **replaces** the entire list rather than adding to it. Send the full set you want, and an empty list to clear them.
-{% endhint %}
+Sending `categories` **replaces** the whole list, so send the full set you want, or an empty list to clear it. Names are checked against the global taxonomy before anything is written: an unknown one fails the call with `UnknownCategory` (`unknown_category` over HTTP) and changes nothing else.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/update_collection_metadata" method="post" %}
 https://gateway.origyn.com/openapi.json
@@ -47,30 +54,28 @@ https://gateway.origyn.com/openapi.json
 
 ### Finding valid category names
 
-Categories are a curated list maintained by ORIGYN, so you cannot invent them. Read the current set before tagging a collection:
+Categories are a curated list, so you cannot invent them. `/categories/catalog` is the full list with descriptions, including names nothing uses yet; `/categories` is only the names collections currently use. Over `dfx`, read them with `list_categories '(null)'`.
 
-```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai list_categories '(null)'
-```
-
-Over HTTP, the categories actually in use are available publicly:
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/categories" method="get" %}
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/categories/catalog" method="get" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="info" %}
-There are two related endpoints and they answer different questions. `/categories` returns the names **currently in use** by collections. `/categories/catalog` returns the full curated catalogue with descriptions, including names nothing uses yet.
-{% endhint %}
-
 ## Setting a collection logo
 
-The logo is an image stored on the collection canister and referenced from its metadata.
+The logo is an image stored on the collection canister and referenced from its metadata. Over HTTP it is a single multipart upload; over `dfx` it is the usual three calls.
 
-**Using dfx instead**
+Re-uploading replaces the previous logo: unlike certificate files, logo paths are keyed by collection rather than by mint request.
 
-Three calls, mirroring the file upload flow:
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl -X POST "$API/upload_logo/$COLLECTION" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -F "file=@logo.png"
+```
+{% endtab %}
 
+{% tab title="dfx" %}
 ```bash
 # 1. Declare the file
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_logo_init_upload '(record {
@@ -96,57 +101,18 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_logo_finalize_u
 })'
 ```
 
+The logo upload still takes `file_hash` as a plain string, unlike certificate uploads where it is optional.
+{% endtab %}
+{% endtabs %}
 
-{% hint style="warning" %}
-**Maximum logo size is 5 MB.** The HTTP endpoint accepts a larger request body, but the canister rejects anything above 5 MB, so a bigger file fails after the upload rather than before it.
-{% endhint %}
+A logo can be at most **5 MiB** (5,242,880 bytes). The HTTP endpoint accepts a body up to 25 MiB, so an oversized file is rejected by the canister after the upload rather than before it.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/upload_logo/{collection_canister_id}" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-Unlike certificate uploads, logo paths are **not** namespaced per mint request; they are keyed by collection, so re-uploading replaces the previous logo.
-
 ## Settling a mint request
 
-A mint request is a paid reservation: capacity to mint, and storage to upload into. Settling it burns the portion you used and refunds the rest.
+Settlement belongs to the minting flow. In short: minting everything does not close the request, `close_mint_request` settles it and refunds the capacity and storage you did not use, and the hourly sweep does it for you after 24 hours of inactivity.
 
-**Minting all your certificates does not settle the request.** It stays `Initialized` until you close it, or until the hourly sweep closes it for you after 24 hours of inactivity.
-
-**Using dfx instead**
-
-```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai close_mint_request '(record {
-  mint_request_id = 77 : nat64
-})'
-```
-
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/close_mint_request" method="post" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
-
-What settlement does, precisely:
-
-* The OGY corresponding to what you actually minted and uploaded is **burned**.
-* The unused portion of **both** reservations is refunded: certificates you did not mint, and storage you did not fill.
-* The refund is reduced by the ledger transfer fee. Amounts at or below that fee are burned instead of paid out.
-
-{% hint style="info" %}
-If you have not touched a request at all, `request_mint_refund` returns the whole amount in one step. It stops working the moment you mint or upload anything. See [Minting](minting.md#closing-a-request-and-getting-money-back).
-{% endhint %}
-
-### Checking a request before you settle
-
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/mint_requests/{id}" method="get" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
-
-**Using dfx instead**
-
-```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(77 : nat64)'
-```
-
-
-Look at `minted_count` against `num_mints`, and `bytes_uploaded` against `allocated_bytes`, to see what you are about to reclaim.
+See [Minting: check status, then settle](minting.md#step-5-check-status-then-settle).

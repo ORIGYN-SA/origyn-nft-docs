@@ -10,15 +10,13 @@ They differ from standard collections in three ways that matter:
 
 | | Standard collection | AI collection |
 | --- | ------------------- | ------------- |
-| Who can create one | Authorized principals only | Any signed-in principal |
+| Who can create one | Owners and Admins of an [organization](../minting-studio/organizations.md) | Any signed-in principal |
 | Template | Yours, registered in advance | A shared built-in template |
 | Metadata validation | Validated against your template | **Not validated** |
+| Owned by | Your organization | Your principal |
+| [Private content](../private-content/overview.md) | Supported | **Not supported** |
 
-{% hint style="warning" %}
-Certificates minted this way are **not checked against a template**. Your JSON must still parse and stay within the per-item size cap, but no field is required and no shape is enforced, so a missing or misshapen field is stored exactly as sent. Validate your metadata yourself; the usual safety net is not there.
-{% endhint %}
-
-You still pay the normal OGY fees. That cost is what keeps the open-to-anyone path from being abused.
+You still pay the normal OGY fees, from your own wallet rather than an organization's billing principal. That cost is what keeps the open-to-anyone path from being abused.
 
 ## When to use this
 
@@ -26,9 +24,7 @@ Use an AI collection when you want to mint certificates without designing a temp
 
 Use a [standard collection](../minting-studio/getting-started.md) when you want your own branding, your own template, template validation, and control over who can mint.
 
-{% hint style="info" %}
 The two paths do not mix. `initialize_mint` refuses AI collections, and `agent_initialize_mint` cannot target a standard one. Choose per collection.
-{% endhint %}
 
 ## Two ways to use it
 
@@ -93,11 +89,11 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai agent_mint_nfts '(rec
 })'
 ```
 
-The JSON envelope is the same as for standard collections: display keys at the top level, field values under `data`. See [Producing your mint JSON](../minting-studio/minting.md#producing-your-mint-json-from-a-template).
+The JSON envelope is the same as for standard collections: display keys at the top level, field values under `data`. See [Producing your mint JSON](../minting-studio/minting.md#writing-the-certificate-json).
 
-The difference is that it is not validated against a template. The JSON must still parse and stay within the per-item size cap, but no field is required and no shape is enforced.
+The difference is that it is not validated against a template. The JSON must still parse and stay within the per-item size cap, but no field is required and no shape is enforced, so a missing or misshapen field is stored exactly as sent. Validate your metadata yourself; the usual safety net is not there.
 
-`agent_mint_nfts` accepts the same optional `public_content` as `mint_json_nfts`, and like it will accept either the bare upload name or the namespaced form. See [Attaching uploaded files](../minting-studio/minting.md#attaching-uploaded-files-public_content).
+`agent_mint_nfts` accepts the same optional `public_content` as `mint_json_nfts`, and like it will accept either the bare upload name or the namespaced form. See [Attaching uploaded files](../minting-studio/minting.md#attaching-uploaded-files).
 
 Refunds work the same way, via `agent_request_mint_refund`.
 
@@ -119,15 +115,9 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai append_file '(record 
 
 Each entry maps a name to the path of a file you have already uploaded and finalized. Standard collections can only attach files at mint time.
 
-{% hint style="warning" %}
-Unlike the mint endpoints, `append_file` needs the **stored** path, the session-namespaced `{mint_request_id}/{name}` form, not the bare name you gave `init_upload`. Its arguments carry no `mint_request_id`, so it cannot work the namespaced form out for you. Take the exact value from `get_collection_files`, or from `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
+Unlike the mint endpoints, `append_file` needs the **stored** path, the session-namespaced `{mint_request_id}/{name}` form, not the bare name you gave `init_upload`. Its arguments carry no `mint_request_id`, so it cannot work the namespaced form out for you. Take the exact value from `get_collection_files`, or from `GET /mint_requests/{id}` → `uploaded_files[].file_path`. A path that does not match returns `UnauthorizedFile { file_path }`.
 
-A path that does not match returns `UnauthorizedFile { file_path }`.
-{% endhint %}
-
-{% hint style="warning" %}
-`append_file` has **no REST equivalent** today. If you are integrating over HTTP, this is the one operation you cannot perform without calling the canister directly.
-{% endhint %}
+`append_file` also has **no REST equivalent** today. If you are integrating over HTTP, this is the one operation you cannot perform without calling the canister directly.
 
 ## Telling AI collections apart
 

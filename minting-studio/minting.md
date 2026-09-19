@@ -7,303 +7,325 @@ metaLinks:
 
 # Minting
 
-Minting is the process of creating certificates (ORIGYN NFTs) within a collection. This guide covers the complete minting flow using the Minting Studio API.
+Minting creates certificates inside a collection. Every example below is shown over HTTP first, with the equivalent `dfx` call beside it.
 
-### Prerequisites
+**Before you start**
 
-- A collection in **TemplateUploaded** status (see [Collections & Certificates](collections-and-certificates.md))
-- OGY tokens in your wallet for minting fees
-- Certificate data ready (text fields, images, documents)
+* A collection in `TemplateUploaded` status (see [Collections & Certificates](collections-and-certificates.md)).
+* The Owner, Admin or Minter role in the collection's [organization](organizations.md).
+* An OGY allowance approved by the organization's billing principal, which pays the fees. See [Pricing](../core-concepts/pricing.md).
 
-Unless noted otherwise, the `dfx` commands below use the Minting Studio canister ID `uasjq-dyaaa-aaaas-qdwka-cai`. The one exception is `burn_nft`, which is called on the collection canister directly.
+Mint requests are shared: any colleague with minting rights can upload to, mint from, close or refund a request you opened.
 
-{% hint style="info" %}
-Every step here is also available over HTTP with an API key. See the [REST API Overview](../rest-api/overview.md).
-{% endhint %}
+The whole flow is five calls:
+
+```
+1. estimate            what it will cost          free
+2. initialize_mint     reserve and pay            charges OGY
+3. upload files        init → chunks → finalize   per file
+4. mint_json_nfts      create the certificates    up to 50 per call
+5. close_mint_request  settle and get the rest back
+```
+
+Set these once and the examples below run as written:
+
+```bash
+export ORIGYN_API_KEY="sk_live_..."
+export API="https://gateway.origyn.com/gateway/v1/nft/production"
+export COLLECTION="<collection_canister_id>"
+```
 
 ---
 
-## Step 1: Estimate Costs
+## Step 1: Estimate the cost
 
-Before minting, estimate the total cost. This is free and charges nothing.
+Free, and charges nothing. `total_bytes` is the total size of the files you will upload, as a decimal string.
 
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/estimate" method="get" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl "$API/estimate?num_mints=10&total_bytes=5000000" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY"
+```
 
-**Using dfx instead**
+```json
+{
+  "total_ogy_e8s": "66663099337",
+  "total_usd_e8s": "92015991",
+  "ogy_usd_price_e8s": "140792",
+  "breakdown": { "base_fee_usd_e8s": "10000000", "storage_fee_usd_e8s": "82015991" }
+}
+```
 
+That is 666.63 OGY for ten certificates and 5 MB of files, about $0.92 at the rate in `ogy_usd_price_e8s`.
+{% endtab %}
+
+{% tab title="dfx" %}
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai estimate_mint_cost '(record {
   num_mints = 10 : nat64;
   total_file_size_bytes = 5000000 : nat
 })'
 ```
+{% endtab %}
+{% endtabs %}
 
-**Returns:** A `MintCostEstimate` with:
+All amounts are e8s, so divide by 100,000,000. See [Pricing](../core-concepts/pricing.md) for what drives the number, and [Minting Private Content](../private-content/minting.md#1-reserve-room-for-encryption) if the batch includes private files.
 
-| Field                           | Description                                                      |
-| ------------------------------- | ---------------------------------------------------------------- |
-| `total_ogy_e8s`                 | Total cost in OGY (e8s precision, divide by 100,000,000 for OGY) |
-| `total_usd_e8s`                 | Total cost in USD equivalent                                     |
-| `ogy_usd_price_e8s`             | Current OGY/USD exchange rate used                               |
-| `breakdown.base_fee_usd_e8s`    | Base fee component                                               |
-| `breakdown.storage_fee_usd_e8s` | Storage fee component (based on file sizes)                      |
+If the OGY price oracle is briefly unavailable you get `OgyPriceNotAvailable`; retry shortly.
 
-**Errors:**
-
-- `OgyPriceNotAvailable`: The OGY price oracle is temporarily unavailable. Try again shortly.
-- `MintPricingNotConfigured`: Minting pricing has not been configured for this canister.
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/estimate" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
 
 ---
 
-## Step 2: Initialize Mint Request
+## Step 2: Reserve capacity and pay
 
-Create a mint request to reserve capacity and lock in the fee:
+This charges OGY to the organization's billing principal and reserves two things: how many certificates you may mint, and how many bytes you may upload. Both are refunded in Step 5 to the extent you do not use them.
 
-{% hint style="danger" %}
-**This charges OGY.** Test it sends a real production request.
-{% endhint %}
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl -X POST "$API/initialize_mint" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d "{
+        \"collection_canister_id\": \"$COLLECTION\",
+        \"num_mints\": 10,
+        \"total_file_size_bytes\": \"5000000\"
+      }"
+```
+
+```json
+{ "mint_request_id": "77", "status": "Initialized" }
+```
+
+`total_file_size_bytes` is a **decimal string**, not a number. `Idempotency-Key` is required; see [Paid Requests](../rest-api/paid-requests.md).
+{% endtab %}
+
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai initialize_mint '(record {
+  collection_canister_id = principal "<collection_canister_id>";
+  num_mints = 10 : nat64;
+  total_file_size_bytes = 5000000 : nat
+})'
+```
+{% endtab %}
+{% endtabs %}
+
+Save the id, every later call needs it:
+
+```bash
+export MINT_REQUEST_ID=77
+```
+
+Size the byte reservation generously. Uploads stop the moment you exceed it, and the unused part comes back when you settle. `num_mints = 0` is valid and opens an upload-only session.
+
+**Errors:** `CollectionNotReady` (the collection is not `TemplateUploaded`), `CallerNotCollectionOwner` (no minting rights in the organization, or it is suspended; `403 not_owner` over HTTP), `TransferFromError` (the billing principal lacks balance or approval).
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/initialize_mint" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
+---
 
+## Step 3: Upload files
+
+Three calls per file: declare it, send the bytes, finalize. A chunk can be at most **1 MiB**, and a file at most **100 MiB**.
+
+Private files use different endpoints; see [Minting Private Content](../private-content/minting.md).
+
+### A. Declare the file
+
+{% tabs %}
+{% tab title="HTTP" %}
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai initialize_mint '(record {
-  collection_canister_id = principal "<your_collection_canister_id>";
-  num_mints = 10 : nat64;
-  total_file_size_bytes = 5000000 : nat
+curl -X POST "$API/init_upload" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{
+        \"mint_request_id\": $MINT_REQUEST_ID,
+        \"file_path\": \"gold_bar_001.png\",
+        \"file_size\": 500000,
+        \"file_hash\": \"$(shasum -a 256 gold_bar_001.png | cut -d' ' -f1)\"
+      }"
+```
+
+```json
+{ "file_path": "gold_bar_001.png", "chunk_size": 1048576 }
+```
+
+`file_hash` (SHA-256, hex) is required over HTTP and is checked when you finalize.
+{% endtab %}
+
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_init_upload '(record {
+  mint_request_id = 77 : nat64;
+  file_path = "gold_bar_001.png";
+  file_size = 500000 : nat64;
+  file_hash = opt "<sha256_hex>";
+  chunk_size = null
 })'
 ```
 
-Over REST, `total_file_size_bytes` is a **decimal string**, not a number.
-
-**Returns:** `mint_request_id` (nat64). Save this, you will need it for all subsequent steps.
-
-This call will transfer OGY tokens from your wallet to cover the minting fee. Ensure you have approved the Minting Studio canister to spend from your OGY balance (via `icrc2_approve` as shown in [Getting Started](getting-started.md)).
-
-**Errors:**
-
-- `CollectionNotReady`: The collection is not in TemplateUploaded status.
-- `CallerNotCollectionOwner`: You are not the owner of this collection.
-- `TransferFromError`: Insufficient OGY balance or approval.
-
-{% hint style="info" %}
-`num_mints = 0` is valid. It opens a **storage-only session**, which is how you reserve upload capacity without reserving any mints.
-{% endhint %}
-
----
-
-## Step 3: Upload Files
-
-If your certificates include images, documents, or other files, upload them before minting. File upload is a three-step process:
-
-#### A. Initialize Upload
+Over `dfx` the hash is optional: pass `null` to skip the check.
+{% endtab %}
+{% endtabs %}
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/init_upload" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
+### B. Send the bytes
 
+The chunk goes in the request body as raw bytes. Everything else goes in the query string.
+
+{% tabs %}
+{% tab title="HTTP" %}
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_init_upload '(record {
-  mint_request_id = <your_mint_request_id> : nat64;
-  file_path = "certificate_image.png";
-  file_size = 500000 : nat64;
-  file_hash = "<sha256_hash_of_file>";
-  chunk_size = null
-})'
+split -b 1048576 -a 3 -d gold_bar_001.png chunk_
+
+n=0
+for chunk in chunk_*; do
+  curl -X POST "$API/store_chunk?mint_request_id=$MINT_REQUEST_ID&file_path=gold_bar_001.png&chunk_id=$n" \
+    -H "Authorization: Bearer $ORIGYN_API_KEY" \
+    -H "Content-Type: application/octet-stream" \
+    --data-binary "@$chunk"
+  n=$((n + 1))
+done
 ```
 
-#### B. Store Chunks
+A file under 1 MiB is a single chunk with `chunk_id=0`.
+{% endtab %}
 
-For files larger than 2 MB, split them into chunks. Each chunk is uploaded separately:
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_store_chunk '(record {
+  mint_request_id = 77 : nat64;
+  file_path = "gold_bar_001.png";
+  chunk_id = 0 : nat;
+  chunk_data = blob "...binary_data..."
+})'
+```
+{% endtab %}
+{% endtabs %}
+
+{% hint style="warning" %}
+**Only re-send a chunk that returned an error.** Bytes are counted per successful call, not per `chunk_id`, so re-sending a chunk that already worked charges you for it twice.
+{% endhint %}
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/store_chunk" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
+### C. Finalize
 
+{% tabs %}
+{% tab title="HTTP" %}
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_store_chunk '(record {
-  mint_request_id = <your_mint_request_id> : nat64;
-  file_path = "certificate_image.png";
-  chunk_id = 0 : nat;
-  chunk_data = blob "...binary_data..."
-})'
+curl -X POST "$API/finalize_upload" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{ \"mint_request_id\": $MINT_REQUEST_ID, \"file_path\": \"gold_bar_001.png\" }"
 ```
 
-Repeat for each chunk, incrementing `chunk_id`.
+```json
+{ "file_url": "https://<collection_canister_id>.raw.icp0.io/77/gold_bar_001.png" }
+```
+{% endtab %}
 
-#### C. Finalize Upload
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_finalize_upload '(record {
+  mint_request_id = 77 : nat64;
+  file_path = "gold_bar_001.png"
+})'
+```
+{% endtab %}
+{% endtabs %}
+
+Keep `file_url`. It is what you put in `path` when the certificate references the file, and uploads are namespaced by mint request, so a bare filename will not render.
+
+Files are served by the collection's storage canister: the URL redirects (`307`) to it, so follow redirects. Range requests are answered with `206`, at most 2 MiB per response.
+
+**Errors:** `ByteLimitExceeded` (past the bytes you reserved), `Unauthorized` (no minting rights, or the organization is suspended).
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/finalize_upload" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
-
-```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai proxy_finalize_upload '(record {
-  mint_request_id = <your_mint_request_id> : nat64;
-  file_path = "certificate_image.png"
-})'
-```
-
-**Returns:** the public URL of the uploaded file. Upload paths are namespaced by the mint request, and the host comes from the collection canister, so the URL has the form:
-
-```
-https://<collection_canister_id>.raw.icp0.io/<mint_request_id>/certificate_image.png
-```
-
-Keep this returned URL. It is the value you put in `path` when you reference the file from your mint JSON.
-
-**Errors:**
-
-- `ByteLimitExceeded`: Total uploaded bytes exceed the `total_file_size_bytes` specified in the mint request.
-- `Unauthorized`: You are not the owner of this mint request.
-
-{% hint style="warning" %}
-**Only re-send a chunk that returned an error.** Uploaded bytes are counted per successful `store_chunk` call, not per `chunk_id`, so re-sending a chunk that already succeeded counts its bytes twice against the storage you paid for at `initialize_mint`.
-{% endhint %}
-
-
 ---
 
-## Step 4: Mint Certificates
+## Step 4: Mint the certificates
 
-With files uploaded, mint the certificates by providing a JSON metadata string for each one. The Minting Studio validates the JSON server-side against the collection's template before minting.
+Each item mints one certificate from a JSON string validated against the collection's template. Up to **50 items** per call, and you can call it repeatedly with the same `mint_request_id` until `num_mints` runs out.
 
-{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/mint_json_nfts" method="post" %}
-https://gateway.origyn.com/openapi.json
-{% endopenapi %}
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl -X POST "$API/mint_json_nfts" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "mint_request_id": 77,
+        "items": [
+          {
+            "owner": { "principal": "<recipient_principal>" },
+            "json_metadata": "{\"name\":\"Gold Bar #001\",\"data\":{\"serial_number\":\"GB-2026-001\"}}",
+            "public_content": [
+              { "name": "certificate_image", "file_path": "gold_bar_001.png" }
+            ]
+          }
+        ]
+      }'
+```
 
-**Using dfx instead**
+```json
+{ "token_ids": ["1"] }
+```
+{% endtab %}
 
+{% tab title="dfx" %}
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai mint_json_nfts '(record {
-  mint_request_id = <your_mint_request_id> : nat64;
+  mint_request_id = 77 : nat64;
   mint_items = vec {
     record {
-      token_owner = record {
-        owner = principal "<recipient_principal>";
-        subaccount = null
-      };
-      json_metadata = "<json string, see Producing your mint JSON below>";
+      token_owner = record { owner = principal "<recipient_principal>"; subaccount = null };
+      json_metadata = "<the JSON string, see below>";
       memo = null
     }
   }
 })'
 ```
 
-**Returns:** A vector of minted token IDs (nat), one per `mint_items` entry in order.
+The field names differ from HTTP: `mint_items` and `token_owner` here, `items` and `owner` over HTTP.
+{% endtab %}
+{% endtabs %}
 
-You can mint in batches or call `mint_json_nfts` multiple times with the same `mint_request_id` until you reach the `num_mints` limit.
+Over HTTP keep each request under about **2 MB** in total, which is the body limit. That is roughly 40 items, whatever the per-item limit allows. A bigger body is rejected as a plain `413` with no JSON error.
 
-### Attaching uploaded files (`public_content`)
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/mint_json_nfts" method="post" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
 
-Each entry in `mint_items` may carry an optional `public_content`: a list of `entry name -> file_path` pairs that attach files you uploaded during this mint request to the certificate.
+### Attaching uploaded files
 
-```json
-"public_content": [
-  { "name": "certificate_image", "file_path": "gold_bar_001.png" }
-]
-```
+`public_content` attaches files from this mint request to the certificate, as `name` and `file_path` pairs. `file_path` is the name you gave `init_upload`; both `gold_bar_001.png` and `77/gold_bar_001.png` resolve to the same file, and `GET /mint_requests/{id}` lists the exact stored paths.
 
-`file_path` is the name you gave `init_upload`. Stored uploads are namespaced by session as `{mint_request_id}/{name}`, and the Minting Studio accepts either spelling, so both `gold_bar_001.png` and `77/gold_bar_001.png` resolve to the same file. If you need the exact stored path, `GET /mint_requests/{id}` lists it under `uploaded_files[].file_path`.
+This is separate from the file references inside `data`, which point at a file by URL. Most certificates set both, pointing at the same upload.
 
-{% hint style="info" %}
-This is separate from the file references inside `data`. `public_content` attaches the file to the token itself; the `data` block points at a file by URL (see [Producing your mint JSON](#producing-your-mint-json-from-a-template)). Most certificates set both, pointing at the same upload.
-{% endhint %}
-
-**Errors (`MintJsonNftsError`):**
-
-- `MintRequestNotFound`: No mint request exists for the given ID.
-- `Unauthorized`: You are not the owner of this mint request.
-- `UnauthorizedFile { file_path }`: A `public_content` entry names a file you have not uploaded to this collection. Over REST this is `403 file_not_uploaded` and the message names the path. Check it against `GET /mint_requests/{id}` → `uploaded_files[].file_path`.
-- `MintRequestNotActive`: The mint request has been refunded or is no longer active.
-- `MintLimitExceeded { allowed, already_minted, requested }`: This batch would exceed the request's `num_mints` cap.
-- `NoItemsProvided`: The `mint_items` vector is empty.
-- `TooManyItems { max }`: More than **50** items in one call. Split the batch.
-- `JsonTooLarge { index, max, got }`: The `json_metadata` for the item at `index` is over **50 KiB**.
-- `BrokenJsonMetadata`: The `json_metadata` string is not valid JSON.
-- `InvalidMetadata`: The JSON parsed but failed validation against the template (missing required field, wrong shape for a field, etc.).
-- `MintError(text)`: Underlying mint call to the collection canister failed.
-
-{% hint style="warning" %}
-Over REST the whole request body is capped at about **2 MB**, which is less than 50 items of 50 KiB. A batch above that is rejected by the gateway before it reaches the canister, as a plain `413` with no JSON error body. Keep a batch under ~2 MB in total: 50 items of 40 KiB, or 40 items of 50 KiB.
-{% endhint %}
+**Errors:** `MintRequestNotFound`, `Unauthorized`, `MintRequestNotActive` (settled or refunded), `UnauthorizedFile { file_path }` (`403 file_not_uploaded`: the file was not uploaded to this collection), `MintLimitExceeded`, `NoItemsProvided`, `TooManyItems` (over 50), `JsonTooLarge` (an item over 50 KiB), `BrokenJsonMetadata`, `InvalidMetadata` (see [validation](#what-validation-enforces)), `MintError`.
 
 ---
 
-## Producing your mint JSON from a template
+## Writing the certificate JSON
 
-The `json_metadata` you pass to `mint_json_nfts` is a JSON object with a fixed outer envelope. Template field values go inside a `data` object; a handful of display keys sit at the top level.
-
-```json
-{
-  "name":         "Gold Bar #001",
-  "image":        "https://<collection_canister_id>.raw.icp0.io/<mint_request_id>/gold_bar_001.png",
-  "description":  "1oz certified gold bar",
-  "minted_at":    "2026-08-01T10:30:00Z",
-  "certified_by": "ORIGYN",
-  "data": {
-    "<template_field_id>": <value>,
-    ...
-  }
-}
-```
-
-The top-level keys drive how the certificate is displayed. Everything declared in your template belongs under `data`, keyed by field `id`.
-
-### Value shapes inside `data`
-
-Each field takes one of exactly three shapes.
-
-| Field kind | Shape | Example |
-| ---------- | ----- | ------- |
-| Plain text | a bare JSON string | `"serial_number": "GB-2026-001"` |
-| Localized text | an object with a `content` key mapping language codes to strings | `"name": { "content": { "en": "Gold Bar", "fr": "Lingot d'or" } }` |
-| File-bearing (`image`, `video`, `document`, `signature`) | an array of file references | `"certificate_image": [{ "id": "img_1", "path": "https://..." }]` |
-
-{% hint style="warning" %}
-A plain string field is written as a **bare string**, not as `{ "content": "..." }`. Under `data`, a `content` key must map to an object of language codes; `{ "content": "GB-2026-001" }` is not accepted as a value for a required field.
-{% endhint %}
-
-{% hint style="warning" %}
-`path` in a file reference is the **URL returned by `finalize_upload`**, not the `file_path` you passed in. Uploads are namespaced server-side by mint request, and the viewer uses this value directly as the media source, so a bare filename renders as a broken image.
-{% endhint %}
-
-### What validation actually enforces
-
-Validation is deliberately lenient, which is worth knowing so you are not surprised in either direction:
-
-* Extra keys the template does not declare are **ignored**, not rejected.
-* Unknown field types in the template do not cause an error.
-* The **only** failure mode is a field marked `required: true` (and not `immutable: true`) that has no non-empty value. That returns `InvalidMetadata`.
-
-So a payload can be accepted and still render incompletely. Treat the template as the contract and check your output in the viewer.
-
-### Reserved field IDs
-
-To have the certificate render correctly in the standard ORIGYN viewer, use these IDs for fields that serve display roles:
-
-| Purpose                  | Field IDs (priority order)                          |
-| ------------------------ | --------------------------------------------------- |
-| Certificate title        | `name`, `company_name`, `certificate_title`         |
-| Certificate image        | `certificate_image` (file reference) or `stamp_upload` (string URL) |
-| Description              | `description`, `short_description`                  |
-| Company logo (header)    | `company_logo`                                      |
-| Issuer ("Certified by")  | `certified_by`                                      |
-
-### Worked example
-
-Given a template with `name` (localized), `serial_number` (plain text), `certificate_image` (image) and `certified_by` (plain text), and assuming `finalize_upload` returned `https://abcde-fqaaa-aaaam-xyzab-cai.raw.icp0.io/77/gold_bar_001.png`:
+`json_metadata` is a JSON object with a fixed envelope: display keys at the top level, template fields under `data`.
 
 ```json
 {
@@ -322,146 +344,207 @@ Given a template with `name` (localized), `serial_number` (plain text), `certifi
 }
 ```
 
-Stringify that JSON and pass it as `json_metadata`.
+Stringify it and pass it as `json_metadata`.
+
+### Value shapes inside `data`
+
+| Field kind | Shape | Example |
+| ---------- | ----- | ------- |
+| Plain text | a bare JSON string | `"serial_number": "GB-2026-001"` |
+| Localized text | an object with `content` mapping language codes to strings | `"name": { "content": { "en": "Gold Bar", "fr": "Lingot d'or" } }` |
+| File-bearing (`image`, `video`, `document`, `signature`) | an array of file references | `"certificate_image": [{ "id": "img_1", "path": "https://..." }]` |
+
+Two rules catch people out. A plain text field is a bare string, so `{ "content": "GB-2026-001" }` does not count as a value for a required field. And `path` is the **`file_url` that finalize returned**, not the `file_path` you sent, because uploads are namespaced by mint request.
+
+### Reserved top-level keys
+
+* **`template`** pins the [template version](templates.md#how-a-certificate-pins-its-version) the certificate is validated against. Leave it out and the current version is recorded for you.
+* **`private`** holds encrypted [private content](../private-content/overview.md) and is written only by the gateway. Sending your own is refused with `InvalidMetadata`.
+
+### Reserved field IDs
+
+The standard viewer looks for these ids when it renders a certificate:
+
+| Purpose | Field IDs (priority order) |
+| ------- | -------------------------- |
+| Certificate title | `name`, `company_name`, `certificate_title` |
+| Certificate image | `certificate_image` (file reference) or `stamp_upload` (string URL) |
+| Description | `description`, `short_description` |
+| Company logo (header) | `company_logo` |
+| Issuer ("Certified by") | `certified_by` |
+
+### What validation enforces
+
+Validation is lenient. Extra keys and unknown field types pass. A certificate is rejected with `InvalidMetadata` only when a `required` field has no non-empty value, when the `template` pin names another template or a version that does not exist, or when the JSON carries its own top-level `private` key. Fields marked `private` are checked by the gateway instead, when you [mint private content](../private-content/minting.md#validation-rules).
+
+So a certificate can mint and still render incompletely. Check your first one in the viewer before minting the rest.
 
 ---
 
-## Step 5: Check Minting Status
+## Step 5: Check status, then settle
 
-Monitor the progress of your mint request:
+{% tabs %}
+{% tab title="HTTP" %}
+```bash
+curl "$API/mint_requests/$MINT_REQUEST_ID" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY"
+```
+{% endtab %}
+
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(77 : nat64)'
+```
+{% endtab %}
+{% endtabs %}
+
+The response reports `status`, `minted_count` against `num_mints`, `bytes_uploaded` against `allocated_bytes`, `uploaded_files`, `ogy_charged`, and the member who opened the request. `GET /mint_requests` lists only the requests you opened; `get_mint_requests_by_org` on the canister lists the whole organization's.
+
+| Status | Meaning |
+| ------ | ------- |
+| `Initialized` | Open for uploads and minting. Minting everything leaves it here. |
+| `Completed` | Settled, with nothing left to refund |
+| `RefundRequested` | Settled, refund queued |
+| `Refunded` | Refund paid |
+| `RefundFailed` | Refund attempt failed, see the reason |
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/mint_requests/{id}" method="get" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
+### Settling
 
+**Minting everything does not close the request.** Settling is when money moves: what you used is burned, and the unused part of both reservations goes back to the billing principal, minus the ledger transfer fee. Residues at or below that fee are burned instead of paid out.
+
+There are two ways to end a request, and which one applies depends on whether you have used it at all.
+
+| Situation | Call | Result |
+| --------- | ---- | ------ |
+| You minted or uploaded anything | `close_mint_request` | Unused capacity and unused storage refunded |
+| You touched nothing at all | `request_mint_refund` | The whole amount back, all or nothing |
+| You forgot | nothing | The hourly sweep settles anything idle for 24 hours, on the same terms as `close_mint_request` |
+
+{% tabs %}
+{% tab title="HTTP" %}
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_mint_request '(<your_mint_request_id> : nat64)'
+curl -X POST "$API/close_mint_request" \
+  -H "Authorization: Bearer $ORIGYN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{ \"mint_request_id\": $MINT_REQUEST_ID }"
 ```
 
-**Returns:** `MintRequestInfo` with:
+Answers `202`; the refund is paid asynchronously.
+{% endtab %}
 
-| Field             | Description                                |
-| ----------------- | ------------------------------------------ |
-| `status`          | Current status (see below)                 |
-| `minted_count`    | Number of tokens minted so far             |
-| `num_mints`       | Total number of mints requested            |
-| `bytes_uploaded`  | Total bytes uploaded                       |
-| `allocated_bytes` | Total bytes allocated                      |
-| `uploaded_files`  | List of uploaded files with paths and URLs |
-| `ogy_charged`     | OGY tokens charged for this request        |
-
-**Mint Request Statuses:**
-
-| Status            | Description                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------------------- |
-| `Initialized`     | Request created, ready for uploads and minting. **Minting every token leaves it here**        |
-| `Completed`       | The request has been **settled** with nothing left to refund                                  |
-| `RefundRequested` | Settled with a refund owed; payout is queued                                                  |
-| `Refunded`        | OGY tokens have been refunded                                                                 |
-| `RefundFailed`    | Refund attempt failed (see reason)                                                            |
+{% tab title="dfx" %}
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai close_mint_request '(record {
+  mint_request_id = 77 : nat64
+})'
+```
+{% endtab %}
+{% endtabs %}
 
 {% hint style="warning" %}
-**Minting all of your tokens does not close the request.** It stays `Initialized` until it is settled, either because you call `close_mint_request` or because it sits idle for 24 hours and the hourly sweep settles it for you.
-
-Settlement is also when money moves: the OGY you actually used is burned and the unused portion of **both** reservations (unminted capacity and un-uploaded storage) is refunded, minus the ledger transfer fee.
+`request_mint_refund` works only while `minted_count` and `bytes_uploaded` are both zero. One token or one byte makes it permanently unavailable (`CreditsAlreadyUsed`), and `close_mint_request` becomes your only route to a refund.
 {% endhint %}
-
----
-
-## Closing a request and getting money back
-
-There are two ways to end a mint request, and picking the wrong one is the most common way to lose access to a refund. **Which one applies depends entirely on whether you have used the request at all.**
-
-### `close_mint_request` (the usual one)
-
-Settles a request you have used. The OGY you consumed is burned, and the unused portion of **both** reservations is refunded: capacity you did not mint, and storage you did not upload.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/close_mint_request" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
-
-```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai close_mint_request '(record {
-  mint_request_id = <your_mint_request_id> : nat64
-})'
-```
-
-Use this whenever you have minted or uploaded anything, including a partially completed batch. The refund arrives asynchronously and is reduced by the ledger transfer fee; amounts at or below that fee are burned rather than paid out.
-
-If you forget, the hourly sweep settles any request left idle for 24 hours on exactly the same terms.
-
-### `request_mint_refund` (untouched requests only)
-
-Refunds a request you have **not used at all**, all or nothing.
-
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/request_mint_refund" method="post" %}
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-**Using dfx instead**
+---
+
+## A whole batch, end to end
+
+This mints one certificate per image in a folder, in batches of 40, and settles at the end. It is the five steps above in one script.
 
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai request_mint_refund '(record {
-  mint_request_id = <your_mint_request_id> : nat64
-})'
+#!/usr/bin/env bash
+set -euo pipefail
+
+API="https://gateway.origyn.com/gateway/v1/nft/production"
+COLLECTION="<collection_canister_id>"
+RECIPIENT="<recipient_principal>"
+IMAGES=(images/*.png)
+
+auth=(-H "Authorization: Bearer $ORIGYN_API_KEY")
+json=(-H "Content-Type: application/json")
+
+# 1. Reserve: one mint per image, plus the bytes they take.
+total_bytes=$(du -cb "${IMAGES[@]}" | tail -1 | cut -f1)
+mint_request_id=$(curl -s -X POST "$API/initialize_mint" "${auth[@]}" "${json[@]}" \
+  -H "Idempotency-Key: batch-$(date +%Y%m%d)-1" \
+  -d "{\"collection_canister_id\":\"$COLLECTION\",\"num_mints\":${#IMAGES[@]},\"total_file_size_bytes\":\"$total_bytes\"}" \
+  | jq -r .mint_request_id)
+
+# 2. Upload each image: declare, send (one chunk per MiB), finalize.
+declare -A url_of
+for image in "${IMAGES[@]}"; do
+  name=$(basename "$image")
+  size=$(wc -c < "$image")
+  hash=$(shasum -a 256 "$image" | cut -d' ' -f1)
+
+  curl -s -X POST "$API/init_upload" "${auth[@]}" "${json[@]}" \
+    -d "{\"mint_request_id\":$mint_request_id,\"file_path\":\"$name\",\"file_size\":$size,\"file_hash\":\"$hash\"}" > /dev/null
+
+  split -b 1048576 -a 3 -d "$image" "/tmp/$name.chunk_"
+  n=0
+  for chunk in "/tmp/$name.chunk_"*; do
+    curl -s -X POST "$API/store_chunk?mint_request_id=$mint_request_id&file_path=$name&chunk_id=$n" \
+      "${auth[@]}" -H "Content-Type: application/octet-stream" --data-binary "@$chunk" > /dev/null
+    n=$((n + 1))
+  done
+  rm -f "/tmp/$name.chunk_"*
+
+  url_of[$name]=$(curl -s -X POST "$API/finalize_upload" "${auth[@]}" "${json[@]}" \
+    -d "{\"mint_request_id\":$mint_request_id,\"file_path\":\"$name\"}" | jq -r .file_url)
+done
+
+# 3. Mint in batches of 40, keeping each request under the 2 MB body limit.
+batch=()
+mint_batch() {
+  [ ${#batch[@]} -eq 0 ] && return
+  printf '%s\n' "${batch[@]}" | jq -s \
+    --argjson id "$mint_request_id" '{mint_request_id: $id, items: .}' \
+    | curl -s -X POST "$API/mint_json_nfts" "${auth[@]}" "${json[@]}" -d @- | jq -r '.token_ids[]'
+  batch=()
+}
+
+for image in "${IMAGES[@]}"; do
+  name=$(basename "$image")
+  serial="${name%.*}"
+  metadata=$(jq -nc --arg serial "$serial" --arg url "${url_of[$name]}" \
+    '{name: $serial, image: $url, data: {serial_number: $serial, certificate_image: [{id: "img_1", path: $url}]}}')
+  batch+=("$(jq -nc --arg owner "$RECIPIENT" --arg meta "$metadata" --arg name "$name" \
+    '{owner: {principal: $owner}, json_metadata: $meta, public_content: [{name: "certificate_image", file_path: $name}]}')")
+  [ ${#batch[@]} -eq 40 ] && mint_batch
+done
+mint_batch
+
+# 4. Settle: refunds the capacity and storage you did not use.
+curl -s -X POST "$API/close_mint_request" "${auth[@]}" "${json[@]}" \
+  -d "{\"mint_request_id\":$mint_request_id}"
 ```
 
-{% hint style="warning" %}
-This works only while `minted_count` and `bytes_uploaded` are both zero. Minting a single token or uploading a single byte makes it permanently unavailable and it returns `CreditsAlreadyUsed`. At that point `close_mint_request` is your route to a refund.
-{% endhint %}
-
-**Errors:**
-
-- `NotInRefundableState`: The request is already settled or refunded.
-- `CreditsAlreadyUsed`: Something has been minted or uploaded. Use `close_mint_request` instead.
+Reuse the same `Idempotency-Key` if you retry the reservation, and a new one only for a genuinely new batch. See [Paid Requests](../rest-api/paid-requests.md).
 
 ---
 
-## Burning Certificates
+## Burning certificates
 
-To permanently destroy a certificate, the **token owner** can call `burn_nft` directly on the collection canister. This is an irreversible operation.
+The **token owner** can destroy a certificate by calling the collection canister directly. This cannot be undone.
 
 ```bash
 dfx canister call <collection_canister_id> burn_nft '(1 : nat)' --network ic
 ```
 
-The argument is the `token_id` of the certificate to burn.
+**Errors:** `NotTokenOwner`, `TokenDoesNotExist`, `ConcurrentManagementCall` (another management call is in flight; retry). Burns are recorded in the collection's ICRC-3 history as `7burn` transactions.
 
-**Returns:** Empty `Ok` on success.
+## `mint_nfts` is gone
 
-**Errors:**
-
-- `NotTokenOwner`: Only the current owner of the token can burn it.
-- `TokenDoesNotExist`: The specified token ID does not exist in this collection.
-- `ConcurrentManagementCall`: Another management operation is in progress. Retry the command.
-
-Burn events are recorded in the collection's ICRC-3 transaction history as `7burn` transactions.
-
----
-
-## Deprecated: `mint_nfts`
-
-{% hint style="danger" %}
-**`mint_nfts` no longer mints anything.** It was reduced to a rejecting stub in release 1.6.0 and returns an error on every call:
-
-```
-mint_nfts is deprecated and no longer mints.
-Use mint_json_nfts; certificates are stored as a single JSON_DATA entry.
-```
-
-Use [`mint_json_nfts`](#step-4-mint-certificates) instead. There is no migration window, because there is no working version of this endpoint to migrate away from.
-{% endhint %}
-
-The endpoint still appears in the canister interface so that the surface and its shared types stay stable, but no call path reaches a mint.
-
-**What this means if you have older code or documentation:**
-
-* The ICRC-3 structured metadata format that `mint_nfts` accepted (the `Text` / `Nat` / `Int` / `Blob` / `Array` / `Map` variant tree) is no longer a supported way to describe a certificate. Every certificate is now stored as a single `JSON_DATA` text entry.
-* The read-side converter for that format was removed in the same release, so nothing produces or consumes it any more.
-* Multi-language values are still fully supported; they are expressed in the mint JSON instead. See [Producing your mint JSON from a template](#producing-your-mint-json-from-a-template).
-
-If you were building a metadata map by hand, replace it with a JSON object and send it through `mint_json_nfts`, which additionally validates your metadata against the collection's template before minting.
+The old `mint_nfts` method is a rejecting stub: every call fails, telling you to use `mint_json_nfts`. It remains in the interface only so generated bindings keep compiling. Certificates are now stored as a single JSON entry, and multi-language values live in the mint JSON above.

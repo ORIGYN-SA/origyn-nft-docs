@@ -2,9 +2,9 @@
 icon: sunglasses
 ---
 
-# Icrc37 - Icrc7
+# ICRC-7 and ICRC-37
 
-This document outlines the technical standards implemented in the ORIGYN NFT canister.
+This page covers the standards the ORIGYN NFT canister implements: ICRC-7 (core NFT), ICRC-37 (approvals), ICRC-3 (transaction history), ICRC-10 (standards discovery) and ICRC-21 (consent messages), plus the companion indexer service.
 
 ### Standards Overview
 
@@ -13,6 +13,8 @@ This document outlines the technical standards implemented in the ORIGYN NFT can
 | ICRC-7       | Core NFT  | Defines ownership, transfers, and metadata (name, symbol, logo).                        |
 | ICRC-37      | Approvals | Enables "delegated authority," allowing marketplaces/dApps to sell NFTs on your behalf. |
 | ICRC-3       | History   | Maintains a secure, verified, and immutable log of all transactions.                    |
+| ICRC-10      | Discovery | Lists the standards a canister supports (`icrc10_supported_standards`).                 |
+| ICRC-21      | Consent   | Human-readable consent messages that wallets show before signing a call.                |
 | Indexer      | Query     | A companion service for filtering history by account or Token ID.                       |
 
 ---
@@ -32,19 +34,19 @@ Purpose: The backbone of transparency. It records every action in a cryptographi
 Get Supported Block Types
 
 ```bash
-dfx canister call $NFT_CANISTER_ID icrc3_supported_block_types '()' --network ic
+dfx canister call $NFT_CANISTER_ID icrc3_supported_block_types '(null)' --network ic
 ```
 
 Get Archive Canisters
 
 ```bash
-dfx canister call $NFT_CANISTER_ID icrc3_get_archives '()' --network ic
+dfx canister call $NFT_CANISTER_ID icrc3_get_archives '(null)' --network ic
 ```
 
 Get Ledger Configuration
 
 ```bash
-dfx canister call $NFT_CANISTER_ID icrc3_get_properties '()' --network ic
+dfx canister call $NFT_CANISTER_ID icrc3_get_properties '(null)' --network ic
 ```
 
 Fetch Transaction Blocks

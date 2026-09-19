@@ -11,7 +11,7 @@ Templates define the structure, layout, and field types of your certificates (OR
 
 ## Visual Template Builder (Recommended)
 
-> **The fastest and easiest way to create templates** is the [Minting Studio Template Builder](https://ahegaoburger.github.io/claimlink-template-builder/). It provides a visual drag-and-drop interface for designing templates, previewing them in real-time, and downloading the ready-to-use JSON file. This approach eliminates manual JSON editing, reduces errors significantly, and is the recommended starting point for all users.
+> **The fastest and easiest way to create templates** is the [Minting Studio Template Builder](https://arturshirokov.github.io/claimlink-template-builder/). It provides a visual drag-and-drop interface for designing templates, previewing them in real-time, and downloading the ready-to-use JSON file. This approach eliminates manual JSON editing, reduces errors significantly, and is the recommended starting point for all users.
 
 With the Template Builder you can:
 
@@ -31,12 +31,10 @@ A collection declares a `certificate_type` when it is created (`"standard"` or `
 [Collections & Certificates](collections-and-certificates.md)), and that choice determines the
 structure the template should have and how the certificate is rendered.
 
-{% hint style="warning" %}
 **Nothing cross-checks the pairing.** Templates are not themselves typed: `create_template` takes
 raw JSON, and creating a collection with `certificate_type = "dpp"` does not verify that
 `template_id` points at a DPP-shaped template. Pairing the right template with the right certificate
 type is yours to get right.
-{% endhint %}
 
 Certificates are still validated against whatever template the collection references at mint time,
 so a mismatched pairing surfaces as mint-time validation errors, not at collection creation.
@@ -70,7 +68,7 @@ A template is stored as a JSON string. At the top level:
 
 ### Sections
 
-Templates are organized into sections. Templates support up to **5 sections** in total. The two standard sections are:
+Templates are organized into sections. There is no limit on the number of sections, and each can be renamed. The two standard sections are:
 
 - **Certificate** The visual certificate tab. Contains the fields displayed prominently on the certificate.
 - **Information** The detailed data tab. Contains additional metadata and supporting information.
@@ -111,7 +109,7 @@ Each section contains items (fields). The following field types are supported:
 | `signature`| Signature image   | Image upload semantically marked as a signature (same `FileReference` shape as `image`) |
 | `readonly` | Static text       | Immutable content that cannot be edited during minting   |
 
-> Each field `id` becomes a top-level key in the per-NFT mint JSON. See [Minting → Producing your mint JSON from a template](minting.md#producing-your-mint-json-from-a-template) for the mapping rules and a worked example.
+> Each field `id` becomes a top-level key in the per-NFT mint JSON. See [Minting → Producing your mint JSON from a template](minting.md#writing-the-certificate-json) for the mapping rules and a worked example.
 
 #### Field Properties
 
@@ -146,6 +144,8 @@ Every field has these common properties:
 | `description` | string  | Helper text shown below the field                              |
 | `validation`  | object  | Validation rules (minLength, maxLength, pattern, errorMessage) |
 | `size`        | string  | Display size: `sm`, `md`, or `lg`                              |
+| `private`     | boolean | If true, the value is encrypted and only authorized readers can see it. See [Private Content](../private-content/overview.md) |
+| `readers`     | array   | For a private field: the reader groups (or `owner`) allowed to read it. See [Marking fields private](../private-content/overview.md#marking-fields-private) |
 
 ### Tree Format (Advanced)
 
@@ -210,7 +210,64 @@ Templates support custom backgrounds for the certificate view:
 | `type: "standard"` | Uses the default ORIGYN certificate background |
 | `type: "custom"`   | Uses a custom image or video as background     |
 
-**Size limit:** Background images should be under **800 KB**. The total template JSON must stay under **1.5 MB** to fit within the Internet Computer's 2 MB ingress message limit.
+**Size guidance:** nothing rejects a large template, but the whole call has to fit in the Internet Computer's 2 MB ingress message. Keep background images under **800 KB** and the template JSON under **1.5 MB**; above that the call fails at the network layer rather than with a clean error.
+
+---
+
+## Template Versions
+
+Every saved change to a template creates a new **version** instead of overwriting the old one. A certificate remembers the version it was minted with, so editing a template never changes how an existing certificate is validated or rendered.
+
+* The first version is `1`. Templates created before versioning existed start at version `1` with their current content.
+* Saving JSON identical to the current version creates nothing and returns that version. Differences in whitespace or key order alone do not count as a change.
+* A template holds at most **10 versions**. Versions are never deleted, because certificates keep pointing at them. Once a template has 10, a changed save is refused with `TooManyVersions` (`409 too_many_template_versions` over REST) and the template is left unchanged. To keep editing, create a new template from the latest JSON.
+* A collection always uses the **newest** version for new certificates. Its template URL points at the newest version.
+
+### How a certificate pins its version
+
+When you mint, the Minting Studio writes the version into the certificate JSON as a top-level `template` key:
+
+```json
+{
+  "name": "Gold Bar #001",
+  "template": { "id": 7, "version": 3 },
+  "data": { ... }
+}
+```
+
+You normally leave `template` out and get the current version. To mint against an older version, set `template` yourself; the certificate is then validated against that version.
+
+| What you send | Result |
+| ------------- | ------ |
+| No `template` key | Validated against the current version, and `template` is added with that version |
+| `{ "id": <this collection's template>, "version": n }` | Validated against version `n` |
+| A version that does not exist | `InvalidMetadata` (`400 invalid_metadata`) |
+| The id of a different template | `InvalidMetadata` (`400 invalid_metadata`) |
+| A partial or malformed `template` (for example only `id`) | Ignored and replaced with the current version |
+
+One batch may mix versions. The 50 KiB per-item limit applies to the JSON after `template` has been added. Certificates minted before versioning existed carry no `template` key and are treated as version `1`.
+
+### Reading a specific version
+
+To render a certificate with the template it was minted with, read `template.version` from the certificate and request that version:
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/templates/{template_id}" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+Pass `?version=n`; omit it for the newest version. The response carries `version` (the one returned), `current_version` (the newest) and `template_url`. The same `?version=` parameter works on `GET /collections/{canister_id}/template`.
+
+Every version of a template, newest first:
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/templates/{template_id}/versions" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+Each version is also served as a static file by the Minting Studio canister, cacheable forever because a version never changes:
+
+```
+https://uasjq-dyaaa-aaaas-qdwka-cai.raw.icp0.io/templates/<template_id>/v<version>.json
+```
 
 ---
 
@@ -228,16 +285,21 @@ https://gateway.origyn.com/openapi.json
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(record {
+  org_id = opt <your_org_id>;
   template_json = "<your_template_json_string>"
 })'
 ```
+
+`org_id` is the [organization](organizations.md) that will own the template. Pass `null` to use the organization you own. Over REST, the response is `201` with the new `template_id`, `version` (`1`), `current_version` and `template_url`.
 
 **Returns:** `template_id` (nat) on success.
 
 **Errors:**
 
-- `LimitExceeded` You have reached the maximum number of templates per owner.
+- `LimitExceeded { max_templates }` The organization has reached its maximum number of templates.
 - `JsonError` The JSON string is malformed.
+- `UnauthorizedCall` You have no organization to create the template in, or your role cannot manage templates.
+- `OrgSuspended` The organization is suspended.
 
 ### Get a Template by ID
 
@@ -249,11 +311,12 @@ https://gateway.origyn.com/openapi.json
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_template_by_id '(record {
-  template_id = 1
+  template_id = 1;
+  version = null
 })'
 ```
 
-**Returns:** `Template` record with `template_id` and `template_json`.
+**Returns:** `Template` record with `template_id`, `template_json`, `version` and `current_version`. Pass `version = opt 2` to read a specific version; `null` returns the newest. An unknown template or version returns `TemplateNotFound`.
 
 ### List Your Template IDs
 
@@ -282,6 +345,25 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_templates_by_owne
 
 **Note:** Due to the 3 MB response limit on the Internet Computer, `limit` should be kept at 2 or less when templates contain large backgrounds. For large collections, fetch IDs first with `get_template_ids_by_owner`, then fetch individually with `get_template_by_id`.
 
+The `*_by_owner` calls return the templates of the organization the principal **owns**. Members of an organization they do not own should list by organization instead.
+
+### List an Organization's Templates
+
+{% openapi src="https://gateway.origyn.com/openapi.json" path="/v1/nft/{env}/orgs/{id_or_slug}/templates" method="get" %}
+https://gateway.origyn.com/openapi.json
+{% endopenapi %}
+
+**Using dfx instead**
+
+```bash
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_templates_by_org '(record {
+  org_id = 12 : nat64;
+  pagination = record { offset = opt 0; limit = opt 2 }
+})'
+```
+
+`get_templates_by_org` returns at most 2 templates per call. `get_template_ids_by_org` takes the same arguments and returns only the ids.
+
 ### Update a Template
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/update_template" method="post" %}
@@ -297,7 +379,16 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_template '(rec
 })'
 ```
 
-**Note:** Only the template owner can update their templates.
+The field name is misspelled in the interface. Write it as `new_tempalte_json`, exactly as shown.
+
+Each successful change creates a new [version](#template-versions). Over REST the response carries the new `version`, `current_version` and `template_url`.
+
+**Errors:**
+
+- `TooManyVersions { max }` The template already has 10 versions. Create a new template to keep editing.
+- `JsonError` The JSON string is malformed.
+- `UnauthorizedCall` The template does not exist, or your role in the owning organization cannot manage templates.
+- `OrgSuspended` The organization is suspended.
 
 ### Delete a Template
 
@@ -311,7 +402,7 @@ https://gateway.origyn.com/openapi.json
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai delete_template '(1)'
 ```
 
-**Note:** Only the template owner can delete their templates.
+Deleting removes every version. A template that a collection still uses cannot be deleted: the call returns `TemplateInUse { collection_ids }` (`409 template_in_use` over REST).
 
 ---
 
@@ -319,7 +410,8 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai delete_template '(1)'
 
 | Limit               | Value        | Reason                                        |
 | ------------------- | ------------ | --------------------------------------------- |
-| Max template JSON   | 1.5 MB       | Fits within the IC 2 MB ingress message limit |
-| Background images   | ~800 KB      | Keeps template size manageable                |
-| Templates per owner | Configurable | Enforced by the Minting Studio canister       |
+| Max template JSON   | ~1.5 MB      | Guidance, not enforced: the call must fit the IC 2 MB ingress message |
+| Background images   | ~800 KB      | Guidance, not enforced: keeps the template inside that limit |
+| Templates per organization | Configurable | Enforced by the Minting Studio canister  |
+| Versions per template | 10         | Versions are never deleted                    |
 | Pagination limit    | 2 per query  | Avoids exceeding the 3 MB IC response limit   |

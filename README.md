@@ -5,6 +5,10 @@ metaLinks: {}
 
 # ORIGYN NFT
 
+ORIGYN issues blockchain certificates for real things: a gold bar, a diamond, a watch, a work of art. Each certificate stores its data, images and documents on chain, and can carry [private fields](private-content/overview.md) only chosen people can read.
+
+**Start here:** [How It Works](core-concepts/how-it-works.md) to understand the pieces, then [Getting Started](minting-studio/getting-started.md) to issue your first certificate. Most teams use the HTTP API with an API key, which needs no blockchain tooling. [Pricing](core-concepts/pricing.md) covers what it costs.
+
 ### The ORIGYN NFT Standard
 
 The ORIGYN NFT is fundamentally different from the NFTs you might know from Ethereum (like ERC-721). It is not just a token; it is a programmable container for data.
@@ -17,7 +21,7 @@ On the other hand ORIGYN NFT stores everything on the blockchain. High-definitio
 
 **2. The "Perpetual OS" Concept**
 
-An ORIGYN NFT is technically a Canister (a smart contract with storage) on the Internet Computer. This means the NFT is an active software application, not a static file. Therefor, the NFT can update its own status (e.g., adding a service record when a watch is repaired).
+An ORIGYN NFT is technically a Canister (a smart contract with storage) on the Internet Computer. This means the NFT is an active software application, not a static file. So the NFT can update its own status (e.g., adding a service record when a watch is repaired).
 
 ### Use Cases
 
