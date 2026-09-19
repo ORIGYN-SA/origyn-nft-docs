@@ -6,9 +6,7 @@ icon: cloud
 
 Everything the Minting Studio does is available over plain HTTP. You can create collections, upload files, mint certificates, manage your organization, and query the index without writing any Internet Computer code.
 
-{% hint style="success" %}
-**This is the recommended way to integrate.** It is also the only way to use [private content](../private-content/overview.md): private values can only be written and read here. (Reader groups can also be managed with `dfx`, but the content they unlock cannot.)
-{% endhint %}
+This is the recommended way to integrate, and the only way to use [private content](../private-content/overview.md): private values can only be written and read here.
 
 ## Base URL
 
@@ -75,9 +73,7 @@ Your credential identifies you on every request. There is no way to act on behal
 
 Both are accepted by every gateway endpoint. See [Obtaining an API Key](api-keys.md).
 
-{% hint style="info" %}
 Writes also need your principal's on-chain authorization of the gateway, which you sign when you create a key. Without it, writes fail with `403 not_delegable` or `403 not_authorized` while reads keep working. See [Withdrawing the gateway's authorization](api-keys.md#withdrawing-the-gateways-authorization).
-{% endhint %}
 
 Reads need no authentication at all. Try one now:
 
@@ -94,7 +90,7 @@ Public reads need nothing. For write endpoints, paste your key into **Authorize*
 The same spec is also browsable at [gateway.origyn.com/docs](https://gateway.origyn.com/docs/).
 
 {% hint style="warning" %}
-Try-it calls hit **production**. Reads are harmless, but `create_collection` and `initialize_mint` spend real OGY. Both require an `Idempotency-Key` you must fill in yourself, which is the deliberate step that stops an idle click from charging you. See [Paid Requests & Idempotency](paid-requests.md).
+**Test it** sends a real production request. Reads are harmless, but `create_collection` and `initialize_mint` spend real OGY, which is why both make you fill in an `Idempotency-Key` first. See [Paid Requests](paid-requests.md).
 {% endhint %}
 
 ## Response conventions
@@ -124,9 +120,7 @@ Responses share one envelope:
 
 `total` is the full number of matching records, independent of the page you requested.
 
-{% hint style="info" %}
-`/search` is the exception: its `limit` defaults to 20 and is clamped rather than rejected, and it takes no `offset`, `sort`, or `order`.
-{% endhint %}
+`/search` is the exception: its `limit` defaults to 20 and is clamped rather than rejected, and it takes no `offset`, `sort` or `order`.
 
 ### Sorting
 
@@ -141,16 +135,14 @@ https://gateway.origyn.com/openapi.json
 A `-` prefix wins over a conflicting `?order=`. Passing `?order=` alone flips the endpoint's default sort key.
 
 {% hint style="warning" %}
-Sorting is **not validated**. An unrecognised sort key silently falls back to the endpoint default and still returns `200`, so a typo gives you correct-looking data in the wrong order. Check the `sort` field in the response envelope to confirm what was actually applied.
+Sorting is **not validated**. An unrecognised sort key falls back to the endpoint default and still returns `200`, so a typo gives you correct-looking data in the wrong order. Check the `sort` field in the response to see what was applied.
 {% endhint %}
 
 ### Timestamps
 
 Every timestamp is an epoch value in **milliseconds**, and the field names say so: `created_at_ms`, `minted_at_ms`, `released_at_ms`, `first_activity_ms`.
 
-{% hint style="info" %}
-The canister API uses **nanoseconds**. If you are porting from `dfx` calls, divide by 1,000,000.
-{% endhint %}
+The canister API uses **nanoseconds**, so divide by 1,000,000 when porting from `dfx`.
 
 ### Errors
 
@@ -170,36 +162,14 @@ Branch on the `error` code. The body is JSON, but it is sent with `Content-Type:
 | `403` | Not permitted | `not_owner`, `not_permitted`, `insufficient_role`, `not_a_member`, `org_suspended`, `org_mismatch`, `not_delegable`, `not_authorized`, `no_delegation`, `file_not_uploaded` |
 | `404` | No such thing | `not_found` |
 | `409` | Conflict | `idempotency_key_conflict`, `concurrent_request`, `collection_not_ready`, `mint_limit_exceeded`, `template_in_use`, `template_limit_exceeded`, `too_many_template_versions` |
-| `413` | Body too large | plain-text, no JSON envelope (see the batch-size note in [Minting](../minting-studio/minting.md#step-4-mint-certificates)) |
+| `413` | Body too large | plain-text, no JSON envelope (see the batch-size note in [Minting](../minting-studio/minting.md#step-4-mint-the-certificates)) |
 | `429` | Rate limited | `rate_limited` |
 | `500` | Internal error | `internal` |
 | `502` | Upstream unavailable | `upstream_unavailable`, `canister_unavailable`, `key_unavailable` |
 
 Public read endpoints return a plain-text message with the status code rather than a JSON envelope.
 
-{% hint style="info" %}
-`GET /allowance` reports a standing ICRC-2 **approval** to the Minting Studio, not an OGY **balance**. A paid call can still fail with `402 insufficient_funds` while that endpoint shows a large number: the approval is a ceiling, the balance is what is actually spendable. There is no pre-flight balance check over REST.
-
-It also reports **whose** approval depends on the credential: an organization-bound key reports the organization's billing principal, while any other key or session reports your own. Charges always come from the billing principal, so `GET /orgs/{org_id}/allowance` is the one to check before paying.
-{% endhint %}
-
-## Two ways in
-
-The REST API is one of two supported integration paths, and they reach the same canisters.
-
-| | REST API | Direct canister |
-| --- | -------- | --------------- |
-| Auth | API key | Your IC identity |
-| Client | Any HTTP client | `dfx` or an agent library |
-| Paying | Billing principal approves once (the dashboard does it during key creation) | Billing principal approves with `icrc2_approve` |
-| Private content | Yes | No |
-| Best for | Backend services, existing stacks, private content | On-chain integrations |
-
-You can move between them freely. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
-
-{% hint style="info" %}
-Some Internet Computer signing is unavoidable either way: the OGY spending approval is signed by you, not by the gateway. The dashboard handles it during key creation, so in practice you sign once and then work over REST until your allowance needs topping up.
-{% endhint %}
+`GET /allowance` reports an ICRC-2 **approval**, not a **balance**, so a paid call can still fail with `402 insufficient_funds` while it shows a large number. Whose approval it reports depends on the credential: an organization-bound key reports the organization's billing principal, anything else reports your own. Charges always come from the billing principal, so check `GET /orgs/{org_id}/allowance` before paying.
 
 ## Limits
 
@@ -211,7 +181,7 @@ Fresh certificates take a few seconds to reach the index after minting. If you n
 
 ## Next steps
 
-* [Obtaining an API Key](api-keys.md)
-* [Paid Requests & Idempotency](paid-requests.md)
-* [Organizations & Members](../minting-studio/organizations.md)
-* [Private Content](../private-content/overview.md)
+* [Obtaining an API Key](api-keys.md): credentials and the gateway's authorization.
+* [Paid Requests](paid-requests.md): the two endpoints that spend OGY.
+* [Troubleshooting](troubleshooting.md): what a refused call means.
+* [Endpoint Reference](reference.md): every endpoint, callable.

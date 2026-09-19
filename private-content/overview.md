@@ -4,11 +4,9 @@ icon: lock
 
 # Private Content
 
-{% hint style="warning" %}
-**Private content works only through the HTTP API for now.** Uploading private files, minting private fields and reading them decrypted all go through `https://gateway.origyn.com` with an [API key](../rest-api/api-keys.md). Direct canister calls (`dfx` or an agent library) cannot write or read private content: the Minting Studio canister refuses a certificate that carries a private part unless the gateway wrote it.
-{% endhint %}
-
 Private content lets a certificate carry information that only chosen readers can see: a purchase price, the owner's name, a lab report, an insurance document. The rest of the certificate stays public, exactly as before.
+
+Private content works only through the HTTP API for now. Uploading private files, minting private fields and reading them decrypted all go through `https://gateway.origyn.com` with an [API key](../rest-api/api-keys.md). Direct canister calls (`dfx` or an agent library) cannot write or read private content: the Minting Studio canister refuses a certificate that carries a private part unless the gateway wrote it.
 
 ## How it works
 
@@ -37,11 +35,7 @@ Each collection has its own encryption key, derived with the Internet Computer's
 | A member of a [reader group](reader-groups.md) | The items whose readers name that group |
 | Anyone else | Nothing private, only the fact that a private part exists |
 
-Holding the certificate is checked at read time, so a transfer moves `owner` access to the new holder.
-
-{% hint style="danger" %}
-**A suspended organization locks its private content for everyone, members included,** until it is reinstated.
-{% endhint %}
+Holding the certificate is checked at read time, so a transfer moves `owner` access to the new holder. A suspended organization locks its private content for everyone, members included, until it is reinstated.
 
 ## Marking fields private
 
@@ -70,11 +64,11 @@ A template item becomes private with `"private": true`. Its `readers` list says 
 
 `from_version` is how you widen access for new certificates without widening it for the ones already issued.
 
-{% hint style="warning" %}
+Three things to keep in mind:
+
 * **Mark private items inside `structure.sections[].items`.** Items elsewhere in the template are not recognized as private.
 * **Templates are public.** Anyone can read a template, so labels and which items are private are visible. Only the values are hidden.
 * **Group names in `readers` are not checked when you save a template.** A misspelled group is accepted and grants nobody.
-{% endhint %}
 
 ### Which template version decides what
 

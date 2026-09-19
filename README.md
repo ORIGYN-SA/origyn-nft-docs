@@ -5,11 +5,9 @@ metaLinks: {}
 
 # ORIGYN NFT
 
-{% hint style="success" %}
-**We recommend the Minting Studio with an API key and the HTTP endpoints.** It needs no Internet Computer tooling, drops into any backend, and is **currently the only way to use private content**: certificate fields and files that are encrypted on chain and readable only by the people you choose.
+ORIGYN issues blockchain certificates for real things: a gold bar, a diamond, a watch, a work of art. Each certificate stores its data, images and documents on chain, and can carry [private fields](private-content/overview.md) only chosen people can read.
 
-Start here: [Getting Started](minting-studio/getting-started.md) → [Obtaining an API Key](rest-api/api-keys.md) → [REST API Overview](rest-api/overview.md). See [Private Content](private-content/overview.md) for what private content can do.
-{% endhint %}
+**Start here:** [How It Works](core-concepts/how-it-works.md) to understand the pieces, then [Getting Started](minting-studio/getting-started.md) to issue your first certificate. Most teams use the HTTP API with an API key, which needs no blockchain tooling. [Pricing](core-concepts/pricing.md) covers what it costs.
 
 ### The ORIGYN NFT Standard
 
@@ -23,7 +21,7 @@ On the other hand ORIGYN NFT stores everything on the blockchain. High-definitio
 
 **2. The "Perpetual OS" Concept**
 
-An ORIGYN NFT is technically a Canister (a smart contract with storage) on the Internet Computer. This means the NFT is an active software application, not a static file. Therefor, the NFT can update its own status (e.g., adding a service record when a watch is repaired).
+An ORIGYN NFT is technically a Canister (a smart contract with storage) on the Internet Computer. This means the NFT is an active software application, not a static file. So the NFT can update its own status (e.g., adding a service record when a watch is repaired).
 
 ### Use Cases
 

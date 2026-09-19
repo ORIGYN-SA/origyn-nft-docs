@@ -14,9 +14,7 @@ There are two ways in.
 
 **Join an existing one.** An Owner or Admin invites you, either by principal or by email. See [Invitations](#invitations).
 
-{% hint style="info" %}
 If you had Minting Studio access before organizations existed, you already own an organization that holds your existing collections and templates. Your existing API keys keep working.
-{% endhint %}
 
 ## Roles
 
@@ -35,9 +33,9 @@ Every member has exactly one role.
 | Transfer ownership | ✓ | | | |
 | Read the organization and its [private content](../private-content/overview.md) | ✓ | ✓ | ✓ | ✓ |
 
-A few rules that follow from this:
+The table does not show these rules:
 
-* **There is exactly one Owner.** The Owner role cannot be invited, assigned, removed or demoted; it only moves with [a transfer](#transferring-ownership).
+* **There is exactly one Owner,** and the role moves only with [a transfer](#transferring-ownership).
 * **A principal can own one organization**, and be a member of any number of others.
 * **Members work on shared resources.** Any Minter can continue a mint request a colleague opened, and any member's uploads can be attached to a certificate in the same collection.
 * **There is no "leave" action.** To leave an organization, ask an Owner or Admin to remove you.
@@ -52,9 +50,7 @@ Two calls create something new and so need to know which organization it belongs
 | No `org_id`, with an organization-bound API key | The key's organization |
 | No `org_id` otherwise | The organization **you own**. If you own none, the call is refused. |
 
-{% hint style="warning" %}
 **Admins, Minters and Viewers of someone else's organization must pass `org_id`.** Without it the Minting Studio looks for an organization you own, which is not the one you work in.
-{% endhint %}
 
 Every other write takes its organization from what it names: a template, a collection, or a mint request.
 
@@ -94,9 +90,7 @@ Change the billing principal (Owner only):
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="warning" %}
 Refunds go to whoever is the billing principal **when the refund is paid out**. Changing it while a mint request is still open redirects that request's refund to the new principal.
-{% endhint %}
 
 ## Invitations
 
@@ -203,9 +197,7 @@ The Owner can hand the organization to another **active** member with `{ "new_ow
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="info" %}
 After a transfer, the billing principal is the new Owner. If a different account should keep paying, set it again with `PATCH /orgs/{org_id}/billing`.
-{% endhint %}
 
 ## Profile and public address
 
@@ -245,9 +237,7 @@ https://gateway.origyn.com/openapi.json
 
 With an API key, `GET /gateway/v1/nft/production/orgs/{org_id}/nfts` and `.../orgs/{org_id}/uploads` return the same lists with private content decrypted for you. See [Reading Private Content](../private-content/reading.md).
 
-{% hint style="info" %}
 The keyed lists `GET /templates` and `GET /mint_requests` are scoped to **you**, not to your organization: `/templates` shows the templates of the organization you own, and `/mint_requests` shows the requests you opened yourself. Use the organization endpoints above to see everything an organization holds.
-{% endhint %}
 
 Your own memberships, with your role in each:
 

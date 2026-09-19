@@ -4,11 +4,9 @@ icon: eye
 
 # Reading Private Content
 
-{% hint style="warning" %}
-**Private content works only through the HTTP API for now.** Decrypted content is returned only by the authenticated gateway endpoints on this page, called with your [API key](../rest-api/api-keys.md). Public reads and direct canister calls return ciphertext.
-{% endhint %}
-
 The gateway decides, per certificate and per caller, which private items the caller may read (see [Who can read what](overview.md#who-can-read-what)). It then returns private **fields** already decrypted, and for private **files** it returns a key the caller uses to decrypt the file itself.
+
+Decrypted content comes only from the authenticated gateway endpoints on this page, called with your [API key](../rest-api/api-keys.md); public reads and direct canister calls return ciphertext, since private content works only through the HTTP API for now (see [Private Content](overview.md)).
 
 ## Endpoints that decrypt
 
@@ -33,9 +31,7 @@ https://gateway.origyn.com/openapi.json
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="info" %}
 A caller who may read nothing still gets `200`, with `"access": "none"`. Calling without a credential is `401`. A temporary key service failure is `502 key_unavailable`, never a silent lock, so retry it.
-{% endhint %}
 
 ## The `private` block
 
@@ -163,7 +159,7 @@ A chunk that fails to decrypt means the file was corrupted, reordered, or the wr
 Because chunks sit at fixed offsets, you can also fetch and decrypt a single chunk with an HTTP `Range` request instead of downloading the whole file.
 
 {% hint style="warning" %}
-**Treat file keys as secrets.** Keep them in memory only, never log or persist them. A key stays valid for its file forever: removing a reader from a group stops the gateway from handing out the key again, but it cannot invalidate a key already given out.
+**Treat file keys as secrets.** Keep them in memory only, never log or persist them. A key stays valid for its file forever, and no revocation can take back one already handed out; see [Revoking access](overview.md#revoking-access).
 {% endhint %}
 
 ## Listing uploaded files

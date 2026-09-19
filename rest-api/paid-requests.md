@@ -11,21 +11,15 @@ Two endpoints in the REST API spend your OGY:
 | `POST /create_collection` | The collection creation fee (15,000 OGY) |
 | `POST /initialize_mint`   | The minting fee for the batch you reserve |
 
+See [Pricing](../core-concepts/pricing.md) for the numbers.
+
 Both require an **`Idempotency-Key`** header. A request without one is rejected before anything is charged.
 
 Both charge your organization's **billing principal**, not the member who makes the call. The billing principal must have approved the Minting Studio to spend OGY; see [Paying: the billing principal](../minting-studio/organizations.md#paying-the-billing-principal).
 
-## Why this is gated
+There is no sandbox: these endpoints go to production and spend real OGY.
 
-The header is a deliberate safety gate, and it does two jobs.
-
-**It makes a charge impossible to trigger by accident.** These endpoints are live on this page, so pressing **Test it** sends a real request against production. Because the header is required and carries no default value, nothing can fire until you deliberately fill it in.
-
-**It makes retries safe.** Networks time out, browsers get closed, and clients retry. Without an idempotency key, a retry after a timeout you never saw the response to would charge you a second time. With one, the retry returns the original result and charges you once.
-
-{% hint style="warning" %}
-There is no sandbox. These endpoints go to production and spend real OGY.
-{% endhint %}
+The header does two jobs. It stops an accidental charge, because nothing fires until you fill it in yourself, and it makes retries safe: without it, retrying after a timeout you never saw the answer to would charge you twice.
 
 ## Producing an idempotency key
 
@@ -63,22 +57,20 @@ A readable prefix is often more useful than a bare UUID when you are reconciling
 
 ### Generate the key once, before you send
 
-This is the one rule that decides whether the mechanism protects you or does nothing at all.
+**The key names the purchase, not the request.** One purchase, one key, however many attempts it takes.
 
-**Generate the key once per operation you intend to perform, store it, and reuse that same value for every retry of that operation.**
-
-The key is what tells the server "this is the same purchase you already saw." If a retry carries a *new* key, the server has no way to know it is a retry, so it treats it as a second, separate purchase and charges you again. Generating the key inside your retry loop therefore defeats the entire mechanism, and it fails in the worst possible way: it looks completely fine until the one time a request times out, which is exactly when you needed the protection.
+A retry carrying a new key looks like a new purchase and is charged again, so generate the key before the first attempt and reuse it for every retry.
 
 {% hint style="danger" %}
 **Never generate the key inside the retry loop.**
 
 ```bash
-# WRONG - a new key each attempt, so a timeout followed by a retry charges twice
+# WRONG: a new key each attempt, so a timeout followed by a retry charges twice
 for attempt in 1 2 3; do
   curl ... -H "Idempotency-Key: $(uuidgen)"
 done
 
-# RIGHT - one key for the operation, reused by every attempt
+# RIGHT: one key for the operation, reused by every attempt
 KEY=$(uuidgen)
 for attempt in 1 2 3; do
   curl ... -H "Idempotency-Key: $KEY"
@@ -86,13 +78,9 @@ done
 ```
 {% endhint %}
 
-The same reasoning applies beyond shell loops. If your HTTP client retries automatically, the key must be fixed *before* it is handed to that client, not computed per attempt. And if the operation spans a process restart, for example a job that resumes after a crash, persist the key alongside the job so the resumed run reuses it rather than minting a fresh one.
+The same applies outside shell loops. If your HTTP client retries for you, fix the key before handing it the request. If the job can restart, store the key with the job.
 
-{% hint style="info" %}
-There is one time bound on that. If a first attempt was charged but never confirmed, the retry replays the original ledger transfer, and the OGY ledger only accepts a transaction whose timestamp falls inside its window (about 24 hours). A retry that lands later cannot be deduplicated against the original, so resume within a day, or reconcile manually rather than retrying blind.
-{% endhint %}
-
-A useful way to think about it: **the key names the purchase, not the request.** One purchase, one key, however many attempts it takes.
+One time bound: a charged but unconfirmed first attempt is replayed against the OGY ledger, which only accepts transactions timestamped within about 24 hours. Resume within a day, or reconcile by hand rather than retrying blind.
 
 ## What each outcome means
 
@@ -147,10 +135,6 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_collect
 
 Only an Owner or Admin can create collections, and the template must belong to the same organization. A refusal is `403 not_permitted`, or `403 org_suspended` for a suspended organization.
 
-{% hint style="info" %}
-`categories` is optional here, unlike the direct canister call, where it is a required field and must be sent as `vec {}` even when empty.
-{% endhint %}
-
 **`request_id` is not the collection canister id.** It is the identifier of the creation request, returned as a string. Provisioning happens asynchronously, so poll for the canister id:
 
 ```bash
@@ -165,9 +149,7 @@ https://gateway.origyn.com/openapi.json
 
 ### Try it
 
-{% hint style="danger" %}
-**This spends 15,000 OGY.** It is a real production call. Fill in `Idempotency-Key` deliberately.
-{% endhint %}
+**This spends 15,000 OGY** and is a real production call.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/create_collection" method="post" %}
 https://gateway.origyn.com/openapi.json
@@ -204,11 +186,9 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/initialize_min
 
 Any Owner, Admin or Minter of the collection's organization can open a mint request.
 
-{% hint style="warning" %}
-`total_file_size_bytes` is a **string**, not a number, and it is a hard cap you have paid for. Uploads that exceed it are rejected. Size it generously; the unused portion is refunded when you close the request, minus the ledger transfer fee. A residual smaller than that fee cannot be sent and is burned instead.
-{% endhint %}
+`total_file_size_bytes` is a string, not a number, and it is a hard cap you have already paid for: uploads stop once you reach it. Size it generously, because the unused part is refunded when you close the request, minus the ledger transfer fee.
 
-Estimate the cost first, which is free:
+Estimate the cost first, which is free. See [Pricing](../core-concepts/pricing.md):
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/estimate" method="get" %}
 https://gateway.origyn.com/openapi.json
@@ -216,9 +196,7 @@ https://gateway.origyn.com/openapi.json
 
 ### Try it
 
-{% hint style="danger" %}
-**This charges OGY.** It is a real production call.
-{% endhint %}
+**This charges OGY** and is a real production call.
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/initialize_mint" method="post" %}
 https://gateway.origyn.com/openapi.json

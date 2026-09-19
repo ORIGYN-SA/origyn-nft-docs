@@ -90,27 +90,22 @@ The 15,000 OGY fee is charged to the organization's billing principal. The colle
 
 ### Certificate Types
 
-Every collection issues one kind of certificate, chosen when the collection is created:
+Every collection issues one kind of certificate, chosen with the `certificate_type` field when the
+collection is created. The type determines the structure of the template the collection uses and how
+its certificates are rendered.
 
 | Value        | Meaning                                                                       |
 | ------------ | ----------------------------------------------------------------------------- |
 | `"standard"` | The certificates the Minting Studio has always issued. This is the default.   |
 | `"dpp"`      | A **Digital Product Passport**.                                               |
 
-The type determines the structure of the template the collection uses and how its certificates are
-rendered. Choose it at creation with the `certificate_type` field; omit it and you get `"standard"`.
-
 **It cannot be changed afterwards.** `update_collection_metadata` does not accept it. To change
-type, create a new collection.
+type, create a new collection. Every collection created before certificate types existed reports
+`"standard"`, so an existing integration sees no change.
 
-Every collection created before certificate types existed reports `"standard"`, so an existing
-integration sees no change.
-
-{% hint style="info" %}
 `certificate_type` is a different axis from whether a collection is AI-created. A collection has
 both: an AI collection issues `"standard"` certificates unless it says otherwise. See
 [REST API Overview](../rest-api/overview.md) for how the two filters differ.
-{% endhint %}
 
 Every collection-shaped and NFT-shaped read endpoint accepts a `certificate_type` filter. On the
 canister, `list_all_collections`, `get_collections_by_owner` and `get_collections_for_user` take
@@ -205,7 +200,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collections_by_or
 
 Certificates are the individual ORIGYN NFTs within a collection. Each certificate contains metadata structured according to the collection's template. They implement the ICRC-7 standard and can be transferred, approved, and queried using standard ICRC-7/ICRC-37 methods (see [ICRC-37 / ICRC-7](../technical-reference/icrc37-icrc7.md)).
 
-> **Looking for JSON metadata or paginated listings?** The endpoints in this section return raw ICRC-7 metadata at the collection canister level. For ready-to-render JSON plus collection info (name, symbol, logo) in a single response, see [Querying NFTs](#querying-nfts) at the bottom of this page.
+The calls below return raw ICRC-7 metadata from the collection canister. For ready-to-render JSON plus collection info (name, symbol, logo) in a single response, and for ownership and holder listings, see [Querying NFTs](#querying-nfts).
 
 ### Viewing Certificate Details
 
@@ -224,7 +219,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nft_details '(rec
 | ---------- | ---------------------------------------------------------------------------------------------------------- |
 | `token_id` | The certificate's token ID within the collection                                                           |
 | `owner`    | Current owner (principal + optional subaccount)                                                            |
-| `metadata` | Raw ICRC-7 metadata map, `opt vec record { text; ICRC3Value }`. **Not** a JSON string. Keys follow [Producing your mint JSON](minting.md#producing-your-mint-json-from-a-template). For a ready-to-parse JSON string, use `get_nft` |
+| `metadata` | Raw ICRC-7 metadata map, `opt vec record { text; ICRC3Value }`. **Not** a JSON string. Keys follow [Producing your mint JSON](minting.md#writing-the-certificate-json). For a ready-to-parse JSON string, use `get_nft` |
 
 ### Listing Certificates in a Collection
 
@@ -243,9 +238,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_nfts '
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="warning" %}
 `offset` behaves differently here than on the other paginated calls. For this endpoint it is a **cursor**, not a skip count: pass the last token ID from the previous page to get the next set, and `null` for the first page.
-{% endhint %}
 
 For the complete end-to-end flow from template design to certificate viewing, see [How It Works](../core-concepts/how-it-works.md).
 
@@ -315,9 +308,7 @@ Things to know about these endpoints:
 
 The four **list** endpoints also support `?sort=` and `?order=`. The two `/stats` endpoints take no query parameters.
 
-{% hint style="info" %}
 The full, always-current schema for every HTTP endpoint is published at [gateway.origyn.com/docs](https://gateway.origyn.com/docs/).
-{% endhint %}
 
 ### `get_nft` (single certificate)
 
@@ -342,6 +333,4 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_nft '(record {
 | `nft.metadata_json` | The JSON metadata string the NFT was minted with   |
 | `collection_info`   | Name, symbol, description, logo for the collection |
 
-{% hint style="info" %}
 If you need just-minted certificates over HTTP, use the live read `GET /collections/{canister_id}/nfts/{token_id}`, which also goes straight to the collection canister. The similarly named `GET /collections/{canister_id}/tokens/{token_id}` is served from the index and lags slightly behind a mint.
-{% endhint %}

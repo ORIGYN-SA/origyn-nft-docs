@@ -4,13 +4,11 @@ icon: users-rectangle
 
 # Reader Groups
 
-{% hint style="warning" %}
-**Private content works only through the HTTP API for now.** Reader groups exist to unlock private content, so this page shows the HTTP endpoints, called with your [API key](../rest-api/api-keys.md). The same group actions also exist on the canister for `dfx` users, but the content they unlock is readable only over HTTP.
-{% endhint %}
-
 A reader group is a named list of principals inside an [organization](../minting-studio/organizations.md). Name the group in a template item's `readers`, and every member of the group can read that item on every certificate of the organization's collections. See [Private Content](overview.md#marking-fields-private) for how templates reference groups.
 
 Reader groups are for people **outside** your organization: an insurer, an auditor, a service partner. Members of the organization already read all private content and do not need a group.
+
+This page shows the HTTP endpoints, called with your [API key](../rest-api/api-keys.md); the same group actions also exist on the canister for `dfx` users, but the content they unlock is readable only over HTTP, as [Private Content](overview.md) explains.
 
 ## Who can manage groups
 
@@ -21,9 +19,7 @@ Reader groups are for people **outside** your organization: an insurer, an audit
 
 A suspended organization cannot change its groups.
 
-{% hint style="info" %}
 **Group membership is public.** Groups are recorded on chain, and anyone can see who belongs to which group. Only the certificate content they unlock is private.
-{% endhint %}
 
 ## Limits
 
@@ -105,11 +101,7 @@ Deletes the group and every membership in it. Answers `204`.
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="warning" %}
-**Changes take effect with a short delay.** Access follows the gateway's read service, which normally picks up a change within a minute. `GET /orgs/{org_id}/groups` reads the canister directly, so it shows a removal before the removed reader actually loses access.
-
-Deleting a group does not remove its `group_id` from templates or certificates. If you create a group with the same id later, its new members get that access. Revocation never recalls what a reader has already downloaded; see [Revoking access](overview.md#revoking-access).
-{% endhint %}
+**Changes take effect with a short delay.** Access follows the gateway's read service, which normally picks up a change within a minute. `GET /orgs/{org_id}/groups` reads the canister directly, so it shows a removal before the removed reader actually loses access. What a removal does and does not take back is covered in [Revoking access](overview.md#revoking-access).
 
 ## Errors
 

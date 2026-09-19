@@ -2,9 +2,9 @@
 icon: sunglasses
 ---
 
-# Icrc37 - Icrc7
+# ICRC-7 and ICRC-37
 
-This document outlines the technical standards implemented in the ORIGYN NFT canister.
+This page covers the standards the ORIGYN NFT canister implements: ICRC-7 (core NFT), ICRC-37 (approvals), ICRC-3 (transaction history), ICRC-10 (standards discovery) and ICRC-21 (consent messages), plus the companion indexer service.
 
 ### Standards Overview
 

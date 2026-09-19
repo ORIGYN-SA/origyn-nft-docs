@@ -4,7 +4,7 @@ icon: rectangle-terminal
 
 # CLI Management
 
-Target Audience: Users who cloned the repo, built the `origyn_icrc7_cmdlinetools` binary, and have full terminal access. For DFX-based management (applicable to both Minting Studio and Custom Installation), see [Management](../managing-your-collection/management.md).
+This page is for people who cloned the repository, built the `origyn_icrc7_cmdlinetools` binary and work from a terminal. For managing a collection with dfx, which applies to both Minting Studio and Custom Installation collections, see [Management](../managing-your-collection/management.md).
 
 ### Environment Setup
 
@@ -93,13 +93,11 @@ Mint with specific metadata:
   --metadata "rarity:Legendary"
 ```
 
-{% hint style="warning" %}
 Two things about this command catch people out.
 
 **`--name` does not become metadata.** It is required by the CLI but its value is discarded, so a token minted without a `name` metadata entry ends up unnamed. Pass the name twice, as shown above.
 
 **`--metadata` splits on the first `:`.** A value containing a colon is truncated at it, so `--metadata "image:https://example.com/i.png"` stores just `https`. Set URL-valued fields with the ICRC-97 flag below, or upload the file and reference it from the metadata JSON.
-{% endhint %}
 
 Mint using a hosted JSON file (ICRC-97 URL):
 
@@ -160,9 +158,7 @@ Check a single permission:
 
 Permission names: `minting`, `manage_authorities`, `update_metadata`, `update_collection_metadata`, `read_uploads`, `update_uploads`.
 
-{% hint style="info" %}
 `--network` defaults to `local`. Always pass `--network ic` for a mainnet collection.
-{% endhint %}
 
 ***
 

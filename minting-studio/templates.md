@@ -31,12 +31,10 @@ A collection declares a `certificate_type` when it is created (`"standard"` or `
 [Collections & Certificates](collections-and-certificates.md)), and that choice determines the
 structure the template should have and how the certificate is rendered.
 
-{% hint style="warning" %}
 **Nothing cross-checks the pairing.** Templates are not themselves typed: `create_template` takes
 raw JSON, and creating a collection with `certificate_type = "dpp"` does not verify that
 `template_id` points at a DPP-shaped template. Pairing the right template with the right certificate
 type is yours to get right.
-{% endhint %}
 
 Certificates are still validated against whatever template the collection references at mint time,
 so a mismatched pairing surfaces as mint-time validation errors, not at collection creation.
@@ -111,7 +109,7 @@ Each section contains items (fields). The following field types are supported:
 | `signature`| Signature image   | Image upload semantically marked as a signature (same `FileReference` shape as `image`) |
 | `readonly` | Static text       | Immutable content that cannot be edited during minting   |
 
-> Each field `id` becomes a top-level key in the per-NFT mint JSON. See [Minting → Producing your mint JSON from a template](minting.md#producing-your-mint-json-from-a-template) for the mapping rules and a worked example.
+> Each field `id` becomes a top-level key in the per-NFT mint JSON. See [Minting → Producing your mint JSON from a template](minting.md#writing-the-certificate-json) for the mapping rules and a worked example.
 
 #### Field Properties
 
@@ -380,6 +378,8 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai update_template '(rec
   new_tempalte_json = "<updated_json_string>"
 })'
 ```
+
+The field name is misspelled in the interface. Write it as `new_tempalte_json`, exactly as shown.
 
 Each successful change creates a new [version](#template-versions). Over REST the response carries the new `version`, `current_version` and `template_url`.
 

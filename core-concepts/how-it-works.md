@@ -110,14 +110,9 @@ A **managed service** where ORIGYN handles all the infrastructure. Ideal for:
 * Projects that don't need custom smart contract logic
 * Quick launches, new collections are ready in under a minute
 
-**Cost:** 15,000 OGY tokens per collection, plus minting fees. ORIGYN manages cycles (gas), upgrades, and infrastructure.
+**Cost:** 15,000 OGY per collection, plus a fee per certificate and its storage. ORIGYN pays the cycles, upgrades and infrastructure. See [Pricing](pricing.md).
 
-There are two ways to drive it, and they reach the same canisters:
-
-* **REST API** with an API key **(recommended)**. No Internet Computer tooling needed, so it drops into an existing backend, and it is **currently the only way to use [private content](../private-content/overview.md)**. [REST API Overview →](../rest-api/overview.md)
-* **Direct canister calls** with `dfx` and your own identity. Everything except writing and reading private content. [Get started with Minting Studio →](../minting-studio/getting-started.md)
-
-You are not locked into either. A collection created over REST is an ordinary ORIGYN NFT canister you can also call directly.
+You can drive it over HTTP with an API key, or by calling the canisters directly with `dfx`. Both reach the same canisters, and you can mix them; only private content is HTTP-only. [Getting Started](../minting-studio/getting-started.md) compares the two and sets you up.
 
 ### Custom Installation
 
@@ -127,6 +122,6 @@ A **self-managed** deployment using the open-source ORIGYN NFT canister. Ideal f
 * Projects requiring custom logic or deep integration
 * Teams comfortable managing their own canisters and cycles
 
-**Cost:** You manage your own cycles. No OGY fee, but you are responsible for all infrastructure.
+**Cost:** no OGY fees. You fund the canister's cycles and run the infrastructure.
 
 [Get started with Custom Installation →](../custom-installation/setup.md)

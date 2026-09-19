@@ -6,9 +6,7 @@ icon: bolt
 
 This guide walks you through launching an ORIGYN NFT collection using the Minting Studio. It is a managed service where ORIGYN handles the infrastructure. If you prefer full control over your smart contracts, see [Custom Installation](../custom-installation/setup.md) instead.
 
-{% hint style="success" %}
-**We recommend working over HTTP with an API key.** It needs no Internet Computer tooling, and it is currently the only way to use [private content](../private-content/overview.md). Step 2 explains the difference between the two ways in.
-{% endhint %}
+Most teams should work over HTTP with an API key: it needs no Internet Computer tooling, and it is the only way to use [private content](../private-content/overview.md). Step 2 compares the two ways in.
 
 ---
 
@@ -22,9 +20,7 @@ The Minting Studio issues official ORIGYN certificates, so every issuer is valid
 
 When your application is approved, your **organization** is created on chain and your wallet is its **Owner**. If the team asks for changes, the dashboard shows their feedback and lets you update and resubmit the form.
 
-{% hint style="info" %}
-Joining a company that already uses the Minting Studio? You do not need to apply. Ask an Owner or Admin of that organization to invite you. See [Organizations & Members](organizations.md#invitations).
-{% endhint %}
+Joining a company that already uses the Minting Studio? Do not apply. Ask an Owner or Admin to invite you instead. See [Organizations & Members](organizations.md#invitations).
 
 ### 2. Choose how you will integrate
 
@@ -67,15 +63,18 @@ export ORIGYN_API_KEY="sk_live_..."
 **3. Check it works**, and note your organization id:
 
 ```bash
-curl https://gateway.origyn.com/gateway/v1/nft/production/me \
-  -H "Authorization: Bearer $ORIGYN_API_KEY"
+export API="https://gateway.origyn.com/gateway/v1/nft/production"
+
+curl "$API/me" -H "Authorization: Bearer $ORIGYN_API_KEY"
 ```
 
-The response lists your principal and, under `orgs`, each organization you belong to with its `org_id` and your `role`.
+The response lists your principal and, under `orgs`, each organization you belong to with its `org_id` and your `role`. Keep that id to hand:
 
-{% hint style="info" %}
-The key-creation dialog approves OGY from **your** wallet. If someone else is your organization's billing principal, that person must approve the Minting Studio from their own wallet. Check the approval that actually pays with `GET /orgs/{org_id}/allowance`.
-{% endhint %}
+```bash
+export ORG_ID=12
+```
+
+The dialog approves OGY from **your** wallet. If someone else is the organization's billing principal, they have to approve from theirs. `GET /orgs/{org_id}/allowance` shows the approval that actually pays.
 {% endtab %}
 
 {% tab title="dfx" %}
@@ -95,7 +94,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_pending_invites '
   "principal" = principal "<dfx_principal>"
 })'
 
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai accept_invite '(record { org_id = <org_id> : nat64 })'
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai accept_invite '(record { org_id = 12 : nat64 })'
 ```
 
 Because this identity does not **own** the organization, name the organization when you create templates and collections: `org_id = opt <org_id>`. Watch the two spellings: `create_template` and `create_collection` take `org_id` as an optional field (`opt`), while every other organization call takes it plain, for example `record { org_id = 12 : nat64 }`.
@@ -121,11 +120,14 @@ A template defines the structure of your certificates. The easiest way to build 
 Register the template JSON. `template_json` is the template as a **string**:
 
 ```bash
-curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_template \
+curl -X POST "$API/create_template" \
   -H "Authorization: Bearer $ORIGYN_API_KEY" \
   -H "Content-Type: application/json" \
-  -d "$(jq -n --rawfile t template.json --argjson org 12 '{ template_json: $t, org_id: $org }')"
+  -d "$(jq -n --rawfile t template.json --argjson org "$ORG_ID" \
+        '{ template_json: $t, org_id: $org }')"
 ```
+
+`jq` reads your template file and turns it into the JSON string the endpoint expects.
 
 ```json
 { "template_id": "1", "version": 1, "current_version": 1, "template_url": "https://...", "template": { ... } }
@@ -139,7 +141,7 @@ https://gateway.origyn.com/openapi.json
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_template '(record {
-  org_id = opt <org_id>;
+  org_id = opt 12;
   template_json = "<your_template_json_here>"
 })'
 ```
@@ -151,22 +153,22 @@ Note the `template_id`; you need it in the next step.
 ### 5. Create the collection
 
 {% hint style="danger" %}
-**This spends 15,000 OGY** from the billing principal. The **Test it** button below sends a real production request, so fill in `Idempotency-Key` deliberately. See [Paid Requests & Idempotency](../rest-api/paid-requests.md).
+**This spends 15,000 OGY** from the billing principal, and **Test it** below sends a real production request. See [Pricing](../core-concepts/pricing.md) and [Paid Requests](../rest-api/paid-requests.md).
 {% endhint %}
 
 ```bash
-curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_collection \
+curl -X POST "$API/create_collection" \
   -H "Authorization: Bearer $ORIGYN_API_KEY" \
   -H "Idempotency-Key: $(uuidgen)" \
   -H "Content-Type: application/json" \
-  -d '{
-        "org_id": <org_id>,
-        "template_id": 1,
-        "name": "My Unique Collection",
-        "symbol": "MUC",
-        "description": "A collection of rare digital artifacts.",
-        "categories": []
-      }'
+  -d "{
+        \"org_id\": $ORG_ID,
+        \"template_id\": 1,
+        \"name\": \"My Unique Collection\",
+        \"symbol\": \"MUC\",
+        \"description\": \"A collection of rare digital artifacts.\",
+        \"categories\": []
+      }"
 ```
 
 ```json
@@ -176,7 +178,13 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/create_collect
 Creation runs in the background, typically in under a minute. Poll until `status` is `TemplateUploaded` and `canister_id` is set; that canister id is what minting needs.
 
 ```bash
-curl https://gateway.origyn.com/gateway/v1/nft/production/collections/1042/status
+curl "$API/collections/1042/status"
+```
+
+Then keep the canister id for minting:
+
+```bash
+export COLLECTION="<canister_id from the status response>"
 ```
 
 {% openapi src="https://gateway.origyn.com/openapi.json" path="/gateway/v1/nft/{env}/create_collection" method="post" %}
@@ -187,7 +195,7 @@ https://gateway.origyn.com/openapi.json
 
 ```bash
 dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(record {
-  org_id = opt <org_id>;
+  org_id = opt 12;
   categories = vec {};
   name = "My Unique Collection";
   description = "A collection of rare digital artifacts.";
@@ -200,7 +208,7 @@ dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai create_collection '(r
 This returns a `collection_id`. Poll `get_collection_info` with it until the status is `TemplateUploaded`:
 
 ```bash
-dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_info '(variant { CollectionId = <collection_id> })'
+dfx canister --network ic call uasjq-dyaaa-aaaas-qdwka-cai get_collection_info '(variant { CollectionId = 1 : nat })'
 ```
 
 A few rules for both ways:
@@ -209,19 +217,15 @@ A few rules for both ways:
 * Every category name must already exist in the global taxonomy, otherwise the call fails with `UnknownCategory` before any OGY is charged. Read the list with `GET /v1/nft/production/categories/catalog` or `list_categories`.
 * Over `dfx`, `categories` is **required** even when empty (`vec {}`). Over HTTP it may be omitted.
 
-{% hint style="warning" %}
-A `Failed` status does **not** mean your fee has been refunded. Creation is retried automatically roughly once a minute, and a reimbursement is only requested once the retry limit is exhausted. See [Collection Lifecycle](collections-and-certificates.md#collection-lifecycle).
-{% endhint %}
+A `Failed` status does not mean your fee came back. Creation retries about once a minute, and a reimbursement is only requested once the retries run out. See [Collection Lifecycle](collections-and-certificates.md#collection-lifecycle).
 
 ---
 
 ### What's Next?
 
-Your collection is now live. Here's what to do next:
+Your collection is live. Next:
 
-- **[Minting](minting.md)** Mint certificates into your collection with the full API flow
-- **[Organizations & Members](organizations.md)** Invite your team, assign roles, and manage billing
-- **[Templates](templates.md)** Learn more about template structure, field types, versions, and the visual builder
-- **[Private Content](../private-content/overview.md)** Add fields and files only chosen readers can see
-- **[Collections & Certificates](collections-and-certificates.md)** Understand the collection lifecycle and how to query certificates
-- **[Managing Collections](managing-collections.md)** Edit metadata, set a logo, and settle mint requests
+* **[Minting](minting.md)**: upload files and issue your first certificates, with a script for a whole batch.
+* **[Private Content](../private-content/overview.md)**: add fields only chosen readers can see.
+* **[Organizations & Members](organizations.md)**: invite your team and manage billing.
+* **[Troubleshooting](../rest-api/troubleshooting.md)**: what to do when a call is refused.

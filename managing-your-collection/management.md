@@ -5,36 +5,31 @@ metaLinks:
     - /broken/spaces/yE16Xb3IemPxJWydtPOj/pages/QPzbTvC6XsT5gERiU43E
 ---
 
-# Management
+# Collection Management with dfx
 
-This guide covers managing your ORIGYN NFT collection after deployment using dfx commands. For CLI-based management (Custom Installation only), see [CLI Management](../custom-installation/cli-management.md).
+Managing a collection canister directly with `dfx`: permissions, metadata, file uploads and token metadata. If you run a Custom Installation, [CLI Management](../custom-installation/cli-management.md) covers the same ground with the command line tool.
 
-## Minting Studio Permissions
+## Minting Studio permissions
 
-If you created your collection via the **Minting Studio**, permissions are **automatically configured**, you do not need to manage them yourself. Who in your organization may do what is decided by their [organization role](../minting-studio/organizations.md#roles), not by collection permissions. The Minting Studio canister acts as a trusted intermediary and handles minting, file uploads, and metadata updates on your behalf.
+If the Minting Studio created your collection, permissions are configured for you and you never call `grant_permission`. Who may do what is decided by each person's [organization role](../minting-studio/organizations.md#roles), not by collection permissions.
 
-**Your permissions as a Minting Studio collection owner:**
+Your principal holds two permissions on the collection:
 
-| Permission                 | What you can do                                           |
-| -------------------------- | --------------------------------------------------------- |
-| `ReadUploads`              | Read uploaded files from your collection                  |
-| `UpdateCollectionMetadata` | Update the collection name, description, logo, and symbol |
+| Permission | What you can do |
+| ---------- | --------------- |
+| `ReadUploads` | Read uploaded files from your collection |
+| `UpdateCollectionMetadata` | Change the collection name, description, logo and symbol |
 
-**Managed by the Minting Studio canister (not user-accessible):**
+The Minting Studio canister holds those two as well, so it can act for you, plus the ones that make the managed service work:
 
-| Permission                 | What the canister handles                                                            |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| `Minting`                  | Creating new certificates, via the [Minting API](../minting-studio/minting.md)       |
-| `UpdateUploads`            | Uploading files, via the proxy upload endpoints                                       |
-| `UpdateMetadata`           | Updating individual token metadata                                                    |
-| `UpdateCollectionMetadata` | Editing collection-level metadata on your behalf                                      |
-| `ManageAuthorities`        | Adding and removing permissions on the collection, without a code upgrade             |
+| Permission | What the canister does with it |
+| ---------- | ------------------------------ |
+| `Minting` | Creates certificates, via the [minting flow](../minting-studio/minting.md) |
+| `UpdateUploads` | Uploads files through the proxy endpoints |
+| `UpdateMetadata` | Updates individual token metadata |
+| `ManageAuthorities` | Changes the permission set on the collection, without a code upgrade |
 
-{% hint style="info" %}
-`ManageAuthorities` is worth understanding: it means the Minting Studio canister can change the permission set on a collection it created. That is what allows permissions to be repaired or extended without redeploying, and it is part of what you accept by using the managed service rather than a [Custom Installation](../custom-installation/setup.md).
-{% endhint %}
-
-This means you **do not** need to call `grant_permission` or `revoke_permission` on Minting Studio collections. All minting and upload operations go through the Minting Studio API, which forwards them to your collection canister with the correct permissions.
+`ManageAuthorities` is the one to understand: the Minting Studio can change who holds which permission on a collection it created. That is what lets permissions be repaired or extended without redeploying, and it is part of what you accept by using the managed service rather than a [Custom Installation](../custom-installation/setup.md).
 
 ***
 
@@ -44,9 +39,7 @@ This means you **do not** need to call `grant_permission` or `revoke_permission`
 
 If you need to change the collection name, description, or logo after launch, you can do so directly since you have the `UpdateCollectionMetadata` permission.
 
-{% hint style="info" %}
 This is the method on **your collection canister**. The Minting Studio has a separate method of the same name that edits the collection through the studio; if you are integrating over HTTP, use that one instead. See [Managing Collections](../minting-studio/managing-collections.md).
-{% endhint %}
 
 ```bash
 dfx canister call $NFT_CANISTER_ID update_collection_metadata "(record {
@@ -118,13 +111,11 @@ dfx canister call $NFT_CANISTER_ID init_upload "(record {
 * `file_hash` is optional. When given, finalize checks the SHA-256 of the assembled file and fails with `FileHashMismatch` if it differs. Pass `null` to skip that check; only completeness is then verified.
 * `chunk_size` defaults to 1 MiB, which is also the maximum. A larger value fails, and the attempt costs the collection cycles because it spawns a new storage canister first.
 
-{% hint style="warning" %}
 Collections built from the repository before mid-September 2026 take `file_hash` as a plain string (`file_hash = \"...\"`), and reject `opt`. Check which one yours expects:
 
 ```bash
 dfx canister --network ic metadata $NFT_CANISTER_ID candid:service | grep file_hash
 ```
-{% endhint %}
 
 Step B: Store Chunk
 

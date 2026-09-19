@@ -4,10 +4,6 @@ icon: file-lock
 
 # Minting Private Content
 
-{% hint style="warning" %}
-**Private content works only through the HTTP API for now.** Every step on this page is an HTTP call with your [API key](../rest-api/api-keys.md). The canister's own `mint_json_nfts` refuses any certificate that carries a `private` block.
-{% endhint %}
-
 Minting a certificate with private content follows the normal [minting flow](../minting-studio/minting.md), with three additions: you reserve room for encryption, you upload private files through their own endpoints, and each certificate carries a `private` part next to its public JSON.
 
 ```
@@ -19,7 +15,7 @@ Minting a certificate with private content follows the normal [minting flow](../
 6. Settle              POST /close_mint_request
 ```
 
-All paths are under `https://gateway.origyn.com/gateway/v1/nft/production/`. The collection must belong to an [organization](../minting-studio/organizations.md), and its template must mark the items you send privately as `"private": true` (see [Marking fields private](overview.md#marking-fields-private)).
+All paths are under `https://gateway.origyn.com/gateway/v1/nft/production/`, and every step is an HTTP call with your [API key](../rest-api/api-keys.md): private content works only through the HTTP API for now, and the canister's own `mint_json_nfts` refuses any certificate that carries a `private` block (see [Private Content](overview.md)). The collection must belong to an [organization](../minting-studio/organizations.md), and its template must mark the items you send privately as `"private": true` (see [Marking fields private](overview.md#marking-fields-private)).
 
 ## 1. Reserve room for encryption
 
@@ -48,9 +44,7 @@ curl -X POST https://gateway.origyn.com/gateway/v1/nft/production/initialize_min
       }'
 ```
 
-{% hint style="danger" %}
 **Leave out `private_file_sizes` and the reservation is too small.** The upload is then refused at its last chunk with `413 byte_limit_exceeded`, after the batch has already been paid for.
-{% endhint %}
 
 ## 2. Upload a private file
 
@@ -117,9 +111,7 @@ The URL serves ciphertext. Keep the `upload_id`; that is how the mint refers to 
 https://gateway.origyn.com/openapi.json
 {% endopenapi %}
 
-{% hint style="info" %}
 The public upload endpoints do not take private files. `POST /init_upload` answers `400 private_flag_removed` if the body has a `private` key, and any `file_path` starting with `p/` answers `400 reserved_path`.
-{% endhint %}
 
 ### Reusing a private file
 
@@ -203,13 +195,9 @@ The gateway checks every item, including items that send no private part. Each r
 
 The certificate plus its private part must stay within the 50 KiB per-item limit, otherwise `413 json_too_large`.
 
-{% hint style="warning" %}
 **These checks run at mint time, after `initialize_mint` has charged you.** Validate your private parts against the template before you reserve and pay.
-{% endhint %}
 
-{% hint style="info" %}
 **Template versions and private items.** Whether an item is private comes from the template version the certificate is minted with (the newest, unless your JSON pins another with `"template": { "id": ..., "version": ... }`). An item that only a newer version makes private can go neither in the public JSON nor in the private part while the certificate pins an older version. Mint against the newest version to set it.
-{% endhint %}
 
 ## Upload errors
 

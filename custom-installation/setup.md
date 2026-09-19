@@ -6,7 +6,7 @@ icon: rectangle-code
 
 This method provides a fully compliant implementation of the ICRC-7 (NFT) and ICRC-37 (Batch Approval) standards. If you prefer a managed service, see [Minting Studio](../minting-studio/getting-started.md) instead.
 
-**Note:** While this is the best choice for developers who need full control over their smart contracts, it requires you to manage your own cycles usage (gas cost) and you are in full responsibility of your collection.
+This is the best choice for developers who need full control over their smart contracts, but you manage your own cycles usage (gas cost) and you are fully responsible for your collection.
 
 ### Prerequisites
 
@@ -45,7 +45,7 @@ The deployment assets live in the `example/` directory, not at the repository ro
 cd example
 ```
 
-{% hint style="warning" %}
+{% hint style="info" %}
 **Use the manual command below, not `deploy_collection.sh`.** The script in `example/` (and the deploy command in `example/README.md`) omits the required `vetkd_key_name` and `vetkd_context` fields, so it currently fails to encode its install argument. It also deploys with `--mode reinstall`, which wipes all state on the target canister.
 {% endhint %}
 
